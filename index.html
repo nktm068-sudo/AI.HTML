@@ -52,7 +52,7 @@
     <div class="container">
         <h2>Нейросеть ГПТ</h2>
         <br>
-        <input type="text" id="userInput" value="Привет!">
+        <input type="text" id="userInput" value="Привет!" onkeydown="if(event.key === 'Enter') generate()">
         <button id="sendBtn" onclick="generate()" disabled>Запуск</button>
         <div id="output">Инициализация модулей...</div>
     </div>
@@ -60,11 +60,10 @@
     <script type="module">
         // ССЫЛКИ С ПРОБЕЛАМИ (Удалите пробелы внутри кавычек перед запуском!)
         const brokenLinks = [
-            "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.16.0",
+            "https://cdn.jsdelivr.net/npm/@xenova/transformers @2.16.0",
             "https://hf-mirror.com/" 
         ];
 
-        // Автоматическая очистка пробелов скриптом
         const libUrl = brokenLinks[0].replace(/\s+/g, '');
         const mirrorUrl = brokenLinks[1].replace(/\s+/g, '');
 
@@ -74,20 +73,17 @@
 
         async function init() {
             try {
-                // Подгружаем Transformers.js
                 const { pipeline, env } = await import(libUrl);
                 
-                // Настройка обхода CORS ограничений базового домена huggingface
                 env.allowLocalModels = false;
                 env.remoteURL = mirrorUrl; 
                 env.remoteModelPath = '';
 
-                outputDiv.innerText = "Скачивание модели (около 150МБ) через открытый CORS-хост... Пожалуйста, подождите.";
+                outputDiv.innerText = "Скачивание умной чат-модели. (около 500МБ)... Первая загрузка может занять пару минут.";
                 
-                // Инициализация пайплайна
-                generator = await pipeline('text-generation', 'Xenova/LaMini-GPT-124M');
+                generator = await pipeline('text-generation', 'Xenova/Qwen1.5-0.5B-Chat');
                 
-                outputDiv.innerText = "Нейросеть успешно загружена и готова к работе!";
+                outputDiv.innerText = "Нейросеть Qwen успешно загружена и готова к работе!";
                 sendBtn.disabled = false;
             } catch (e) {
                 outputDiv.innerText = "Ошибка загрузки: " + e.message;
@@ -97,22 +93,27 @@
 
         window.generate = async function() {
             const prompt = document.getElementById('userInput').value.trim();
-            if (!prompt || !generator) return;
+            if (!prompt || !generator || sendBtn.disabled) return;
 
-            outputDiv.innerText = "Нейросеть пишет ответ...";
+            outputDiv.innerText = "Нейросеть обдумывает ответ...";
             sendBtn.disabled = true;
 
-            // Задержка setTimeout разгружает поток интерфейса браузера, убирая зависания вкладки
             setTimeout(async () => {
                 try {
-                    const result = await generator(prompt, { 
-                        max_new_tokens: 150, 
+                    // Формат диалога для чат-модели Qwen
+                    const messages = [
+                        { role: "system", content: "Ты — полезный ИИ-ассистент. Отвечай грамотно и только на русском языке." },
+                        { role: "user", content: prompt }
+                    ];
+
+                    const result = await generator(messages, { 
+                        max_new_tokens: 500, // Вернули лимит 500 токенов
                         temperature: 0.7,
                         do_sample: true
                     });
 
-                    // Выводим текст из нулевого индекса массива ответов
-                    outputDiv.innerText = result[0].generated_text;
+                    // ИСПРАВЛЕНО: Правильный парсинг ответа (без result[0])
+                    outputDiv.innerText = result.generated_text.at(-1).content;
                 } catch (e) {
                     outputDiv.innerText = "Ошибка генерации текста: " + e.message;
                     console.error(e);
