@@ -58,14 +58,9 @@
     </div>
 
     <script type="module">
-        // ССЫЛКИ С ПРОБЕЛАМИ (Удалите пробелы внутри кавычек перед запуском!)
-        const brokenLinks = [
-            "https://cdn.jsdelivr.net/npm/@xenova/transformers @2.16.0",
-            "https://hf-mirror.com/" 
-        ];
-
-        const libUrl = brokenLinks[0].replace(/\s+/g, '');
-        const mirrorUrl = brokenLinks[1].replace(/\s+/g, '');
+        // ССЫЛКА С ПРОБЕЛАМИ (Удали пробелы внутри кавычек перед запуском!)
+        const brokenLink = "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.16.0";
+        const libUrl = brokenLink.replace(/\s+/g, '');
 
         const outputDiv = document.getElementById('output');
         const sendBtn = document.getElementById('sendBtn');
@@ -73,20 +68,23 @@
 
         async function init() {
             try {
+                // Подгружаем библиотеку динамически
                 const { pipeline, env } = await import(libUrl);
-                
-                env.allowLocalModels = false;
-                env.remoteURL = mirrorUrl; 
+
+                // Включаем поиск модели локально в твоем репозитории
+                env.allowLocalModels = true;
+                env.remoteURL = ''; 
                 env.remoteModelPath = '';
 
-                outputDiv.innerText = "Скачивание умной чат-модели. (около 500МБ)... Первая загрузка может занять пару минут.";
+                outputDiv.innerText = "Загрузка твоей личной обученной нейросети из папки репозитория...";
                 
-                generator = await pipeline('text-generation', 'Xenova/Qwen1.5-0.5B-Chat');
+                // Сайт будет искать файлы в папке my-model у тебя на гитхабе
+                generator = await pipeline('text-generation', './my-model/');
                 
-                outputDiv.innerText = "Нейросеть Qwen успешно загружена и готова к работе!";
+                outputDiv.innerText = "Твоя личная нейросеть успешно загружена и готова к работе!";
                 sendBtn.disabled = false;
             } catch (e) {
-                outputDiv.innerText = "Ошибка загрузки: " + e.message;
+                outputDiv.innerText = "Ожидание загрузки файлов модели в репозиторий... Ошибка: " + e.message;
                 console.error(e);
             }
         }
@@ -95,27 +93,32 @@
             const prompt = document.getElementById('userInput').value.trim();
             if (!prompt || !generator || sendBtn.disabled) return;
 
-            outputDiv.innerText = "Нейросеть обдумывает ответ...";
+            outputDiv.innerText = "Нейросеть пишет ответ...";
             sendBtn.disabled = true;
 
             setTimeout(async () => {
                 try {
-                    // Формат диалога для чат-модели Qwen
-                    const messages = [
-                        { role: "system", content: "Ты — полезный ИИ-ассистент. Отвечай грамотно и только на русском языке." },
-                        { role: "user", content: prompt }
-                    ];
+                    // Формат диалога без имён, на котором сейчас учится модель в Colab
+                    const formattedPrompt = `User: ${prompt}\nAssistant:`;
 
-                    const result = await generator(messages, { 
-                        max_new_tokens: 500, // Вернули лимит 500 токенов
-                        temperature: 0.7,
+                    const result = await generator(formattedPrompt, { 
+                        max_new_tokens: 200, 
+                        temperature: 0.4, 
                         do_sample: true
                     });
 
-                    // ИСПРАВЛЕНО: Правильный парсинг ответа (без result[0])
-                    outputDiv.innerText = result.generated_text.at(-1).content;
+                    let responseText = result.generated_text;
+
+                    // Аккуратно отрезаем технические маркеры, чтобы показать чистый ответ
+                    if (responseText.includes("Assistant:")) {
+                        responseText = responseText.split("Assistant:").pop().trim();
+                    } else if (responseText.startsWith(formattedPrompt)) {
+                        responseText = responseText.substring(formattedPrompt.length).trim();
+                    }
+
+                    outputDiv.innerText = responseText || "Модель задумалась, попробуй другой вопрос.";
                 } catch (e) {
-                    outputDiv.innerText = "Ошибка генерации текста: " + e.message;
+                    outputDiv.innerText = "Ошибка генерации: " + e.message;
                     console.error(e);
                 } finally {
                     sendBtn.disabled = false;
