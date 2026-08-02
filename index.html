@@ -4,76 +4,125 @@
     <meta charset="UTF-8">
     <title>Нейросеть ГПТ</title>
     <style>
-        body { background: #111; color: #fff; font-family: sans-serif; text-align: center; padding-top: 50px; }
-        .container { max-width: 700px; margin: 0 auto; background: #1e1e1e; padding: 25px; border-radius: 8px; }
-        input { font-size: 16px; padding: 10px; width: 70%; background: #2a2a2a; color: #fff; border: 1px solid #444; border-radius: 4px; }
-        button { font-size: 14px; padding: 10px 15px; cursor: pointer; background: #007acc; color: white; border: none; border-radius: 4px; margin: 5px; }
-        #output { margin-top: 25px; padding: 15px; background: #111; border-radius: 4px; text-align: left; min-height: 100px; }
+        body { 
+            background: #111; 
+            color: #fff; 
+            font-family: sans-serif; 
+            text-align: center; 
+            padding-top: 50px; 
+        }
+        .container { 
+            max-width: 700px; 
+            margin: 0 auto; 
+            background: #1e1e1e; 
+            padding: 25px; 
+            border-radius: 8px; 
+        }
+        input { 
+            font-size: 16px; 
+            padding: 10px; 
+            width: 70%; 
+            background: #2a2a2a; 
+            color: #fff; 
+            border: 1px solid #444; 
+            border-radius: 4px; 
+        }
+        button { 
+            font-size: 14px; 
+            padding: 10px 15px; 
+            cursor: pointer; 
+            background: #007acc; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            margin: 5px; 
+        }
+        #output { 
+            margin-top: 25px; 
+            padding: 15px; 
+            background: #111; 
+            border-radius: 4px; 
+            text-align: left; 
+            min-height: 100px; 
+            white-space: pre-wrap;
+        }
     </style>
 </head>
 <body>
+    <div class="container">
+        <h2>Нейросеть ГПТ</h2>
+        <br>
+        <input type="text" id="userInput" value="Привет!">
+        <button id="sendBtn" onclick="generate()" disabled>Запуск</button>
+        <div id="output">Инициализация модулей...</div>
+    </div>
 
-<div class="container">
-    <h2>Нейросеть ГПТ</h2>
-    <br>
-    <input type="text" id="userInput" value="">
-    <button id="sendBtn" onclick="generate()" disabled>Запуск</button>
+    <script type="module">
+        // ССЫЛКИ С ПРОБЕЛАМИ (Удалите пробелы внутри кавычек перед запуском!)
+        const brokenLinks = [
+            "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.16.0",
+            "https://hf-mirror.com/" 
+        ];
 
-    <div id="output">Загрузка ядра нейросети...</div>
-</div>
+        // Автоматическая очистка пробелов скриптом
+        const libUrl = brokenLinks[0].replace(/\s+/g, '');
+        const mirrorUrl = brokenLinks[1].replace(/\s+/g, '');
 
-<script type="module">
-    const brokenLinks = [
-        "https:// cdn. jsdelivr. net/ npm/ @xenova/ transformers @2.16.0",
-        "https:// cors- anywhere. herokuapp. com/",
-        "h t t p s : / / h u g g i n g f a c e . c o /"
-    ];
+        const outputDiv = document.getElementById('output');
+        const sendBtn = document.getElementById('sendBtn');
+        let generator = null;
 
-    const outputDiv = document.getElementById('output');
-    const sendBtn = document.getElementById('sendBtn');
-    let generator = null;
+        async function init() {
+            try {
+                // Подгружаем Transformers.js
+                const { pipeline, env } = await import(libUrl);
+                
+                // Настройка обхода CORS ограничений базового домена huggingface
+                env.allowLocalModels = false;
+                env.remoteURL = mirrorUrl; 
+                env.remoteModelPath = '';
 
-    async function init() {
-        const cleanLib = brokenLinks[0].replace(/\s+/g, '');
-        const cleanProxy = brokenLinks[1].replace(/\s+/g, '');
-        const cleanHugging = brokenLinks[2].replace(/\s+/g, '');
-
-        try {
-            const { pipeline, env } = await import(cleanLib);
-            
-            env.allowLocalModels = false;
-            env.remoteURL = cleanProxy + cleanHugging;
-            env.remoteModelPath = '';
-
-            outputDiv.innerText = "Скачивание весов модели из сети (около 150МБ)...";
-            
-            generator = await pipeline('text-generation', 'Xenova/LaMini-GPT-124M');
-            
-            outputDiv.innerText = "Нейросеть успешно загружена и готова к работе!";
-            sendBtn.disabled = false;
-        } catch (e) {
-            outputDiv.innerText = "Ошибка загрузки: " + e.message;
+                outputDiv.innerText = "Скачивание модели (около 150МБ) через открытый CORS-хост... Пожалуйста, подождите.";
+                
+                // Инициализация пайплайна
+                generator = await pipeline('text-generation', 'Xenova/LaMini-GPT-124M');
+                
+                outputDiv.innerText = "Нейросеть успешно загружена и готова к работе!";
+                sendBtn.disabled = false;
+            } catch (e) {
+                outputDiv.innerText = "Ошибка загрузки: " + e.message;
+                console.error(e);
+            }
         }
-    }
 
-    window.generate = async function() {
-        const prompt = document.getElementById('userInput').value.trim();
-        if (!prompt || !generator) return;
+        window.generate = async function() {
+            const prompt = document.getElementById('userInput').value.trim();
+            if (!prompt || !generator) return;
 
-        // Полностью убрали слово "токены" для понятности
-        outputDiv.innerText = "Нейросеть пишет ответ...";
-        sendBtn.disabled = true;
+            outputDiv.innerText = "Нейросеть пишет ответ...";
+            sendBtn.disabled = true;
 
-        const result = await generator(prompt, { 
-            max_new_tokens: 500, 
-            temperature: 0.7 
-        });
-        
-        outputDiv.innerText = result.generated_text;
-        sendBtn.disabled = false;
-    };
+            // Задержка setTimeout разгружает поток интерфейса браузера, убирая зависания вкладки
+            setTimeout(async () => {
+                try {
+                    const result = await generator(prompt, { 
+                        max_new_tokens: 150, 
+                        temperature: 0.7,
+                        do_sample: true
+                    });
 
-    init();
-</script>
+                    // Выводим текст из нулевого индекса массива ответов
+                    outputDiv.innerText = result[0].generated_text;
+                } catch (e) {
+                    outputDiv.innerText = "Ошибка генерации текста: " + e.message;
+                    console.error(e);
+                } finally {
+                    sendBtn.disabled = false;
+                }
+            }, 50);
+        };
+
+        init();
+    </script>
 </body>
 </html>
