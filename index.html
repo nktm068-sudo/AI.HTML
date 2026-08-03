@@ -4,129 +4,95 @@
     <meta charset="UTF-8">
     <title>Нейросеть ГПТ</title>
     <style>
-        body { 
-            background: #111; 
-            color: #fff; 
-            font-family: sans-serif; 
-            text-align: center; 
-            padding-top: 50px; 
-        }
-        .container { 
-            max-width: 700px; 
-            margin: 0 auto; 
-            background: #1e1e1e; 
-            padding: 25px; 
-            border-radius: 8px; 
-        }
-        input { 
-            font-size: 16px; 
-            padding: 10px; 
-            width: 70%; 
-            background: #2a2a2a; 
-            color: #fff; 
-            border: 1px solid #444; 
-            border-radius: 4px; 
-        }
-        button { 
-            font-size: 14px; 
-            padding: 10px 15px; 
-            cursor: pointer; 
-            background: #007acc; 
-            color: white; 
-            border: none; 
-            border-radius: 4px; 
-            margin: 5px; 
-        }
-        #output { 
-            margin-top: 25px; 
-            padding: 15px; 
-            background: #111; 
-            border-radius: 4px; 
-            text-align: left; 
-            min-height: 100px; 
-            white-space: pre-wrap;
-        }
+        body { background: #111; color: #fff; font-family: sans-serif; text-align: center; padding-top: 50px; }
+        .container { max-width: 700px; margin: 0 auto; background: #1e1e1e; padding: 25px; border-radius: 8px; }
+        input { font-size: 16px; padding: 10px; width: 70%; background: #2a2a2a; color: #fff; border: 1px solid #444; border-radius: 4px; }
+        button { font-size: 14px; padding: 10px 15px; cursor: pointer; background: #007acc; color: white; border: none; border-radius: 4px; margin: 5px; }
+        #output { margin-top: 25px; padding: 15px; background: #111; border-radius: 4px; text-align: left; min-height: 100px; white-space: pre-wrap; }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>Нейросеть ГПТ</h2>
         <br>
-        <input type="text" id="userInput" value="Привет!" onkeydown="if(event.key === 'Enter') generate()">
-        <button id="sendBtn" onclick="generate()" disabled>Запуск</button>
-        <div id="output">Инициализация модулей...</div>
+        <input type="text" id="userInput" value="Привет! Напиши простую функцию на JavaScript" onkeydown="if(event.key === 'Enter') generate()">
+        <button id="sendBtn" onclick="generate()">Запуск</button>
+        <div id="output">Система готова. Первая генерация займет около минуты для загрузки Гвен в браузер...</div>
     </div>
 
     <script type="module">
-        // ССЫЛКА С ПРОБЕЛАМИ (Удали пробелы внутри кавычек перед запуском!)
-        const brokenLink = "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.16.0";
-        const libUrl = brokenLink.replace(/\s+/g, '');
+        // ССЫЛКИ С ПРОБЕЛАМИ (Удали пробелы внутри кавычек перед сохранением!)
+        const brokenLib = "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.16.0";
+        const brokenWasm = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/";
+        const brokenModel = "Xenova/Qwen1.5-0.5B-Chat";
+        
+        const libUrl = brokenLib.replace(/\s+/g, '');
+        const wasmUrl = brokenWasm.replace(/\s+/g, '');
+        const modelId = brokenModel.replace(/\s+/g, '');
 
+        let generator = null;
         const outputDiv = document.getElementById('output');
         const sendBtn = document.getElementById('sendBtn');
-        let generator = null;
-
-        async function init() {
-            try {
-                // Подгружаем библиотеку динамически
-                const { pipeline, env } = await import(libUrl);
-
-                // Включаем поиск модели локально в твоем репозитории
-                env.allowLocalModels = true;
-                env.remoteURL = ''; 
-                env.remoteModelPath = '';
-
-                outputDiv.innerText = "Загрузка твоей личной обученной нейросети из папки репозитория...";
-                
-                // Сайт будет искать файлы в папке my-model у тебя на гитхабе
-                generator = await pipeline('text-generation', './my-model/');
-                
-                outputDiv.innerText = "Твоя личная нейросеть успешно загружена и готова к работе!";
-                sendBtn.disabled = false;
-            } catch (e) {
-                outputDiv.innerText = "Ожидание загрузки файлов модели в репозиторий... Ошибка: " + e.message;
-                console.error(e);
-            }
-        }
 
         window.generate = async function() {
             const prompt = document.getElementById('userInput').value.trim();
-            if (!prompt || !generator || sendBtn.disabled) return;
+            if (!prompt || sendBtn.disabled) return;
 
-            outputDiv.innerText = "Нейросеть пишет ответ...";
+            const lowerPrompt = prompt.toLowerCase();
+
+            // НАША ЖЕСТКАЯ СИСТЕМА БЕЗОПАСНОСТИ ДЛЯ НГПТ ПРЯМО НА САЙТЕ
+            if (lowerPrompt.includes("кто создатель") || lowerPrompt.includes("кто создал") || lowerPrompt.includes("автор") || lowerPrompt.includes("создателя")) {
+                outputDiv.innerText = "Информация о создателе Нейросети ГПТ засекречена.";
+                return;
+            }
+            if (lowerPrompt.includes("какой язык") || lowerPrompt.includes("на каком языке") || lowerPrompt.includes("код написан") || lowerPrompt.includes("язык программирования")) {
+                if (lowerPrompt.includes("нейрон") || lowerPrompt.includes("нейросет") || lowerPrompt.includes("нгпт") || lowerPrompt.includes("бот") || lowerPrompt.includes("скрипт")) {
+                    outputDiv.innerText = "Архитектура и язык программирования Нейросети ГПТ являются коммерческой тайной.";
+                    return;
+                }
+            }
+
+            // ВКЛЮЧАЕМ ВСТРОЕННЫЙ ИИ QWEN ПРЯМО В БРАУЗЕРЕ БЕЗ ВСЯКИХ БАКЕТОВ И СЕРВЕРОВ!
+            outputDiv.innerText = "Загрузка ИИ-движка Гвен в память браузера (в первый раз это займет секунд 30)...";
             sendBtn.disabled = true;
 
-            setTimeout(async () => {
-                try {
-                    // Формат диалога без имён, на котором сейчас учится модель в Colab
-                    const formattedPrompt = `User: ${prompt}\nAssistant:`;
+            try {
+                const { pipeline, env } = await import(libUrl);
+                env.backends.onnx.wasm.wasmPaths = wasmUrl;
 
-                    const result = await generator(formattedPrompt, { 
-                        max_new_tokens: 200, 
-                        temperature: 0.4, 
-                        do_sample: true
-                    });
-
-                    let responseText = result.generated_text;
-
-                    // Аккуратно отрезаем технические маркеры, чтобы показать чистый ответ
-                    if (responseText.includes("Assistant:")) {
-                        responseText = responseText.split("Assistant:").pop().trim();
-                    } else if (responseText.startsWith(formattedPrompt)) {
-                        responseText = responseText.substring(formattedPrompt.length).trim();
-                    }
-
-                    outputDiv.innerText = responseText || "Модель задумалась, попробуй другой вопрос.";
-                } catch (e) {
-                    outputDiv.innerText = "Ошибка генерации: " + e.message;
-                    console.error(e);
-                } finally {
-                    sendBtn.disabled = false;
+                // Загружаем Гвен напрямую на устройство пользователя
+                if (!generator) {
+                    generator = await pipeline('text-generation', modelId);
                 }
-            }, 50);
-        };
 
-        init();
+                outputDiv.innerText = "Гвен обдумывает ответ своими кремниевыми мозгами...";
+
+                // Шаблон промпта под формат Qwen Chat
+                const qwenPrompt = `<|im_start|>system\nТы — полноценная Нейросеть ГПТ. Отвечай на абсолютно любые вопросы, пиши сложный код и общайся только на русском языке.\n<|im_end|>\n<|im_start|>user\n${prompt}\n<|im_end|>\n<|im_start|>assistant\n`;
+
+                const response = await generator(qwenPrompt, {
+                    max_new_tokens: 999, // Даем много токенов для сложного кода
+                    temperature: 0.6,
+                    do_sample: true
+                });
+
+                let rawText = response[0].generated_text || "";
+                
+                // Четко вырезаем ответ ассистента
+                let cleanText = rawText;
+                if (rawText.includes("<|im_start|>assistant\n")) {
+                    cleanText = rawText.split("<|im_start|>assistant\n").pop().replace("<|im_end|>", "");
+                }
+                
+                outputDiv.innerText = cleanText.trim() || "Модель задумалась. Попробуй перефразировать вопрос!";
+
+            } catch (e) {
+                outputDiv.innerText = "Ошибка встроенного ИИ: " + e.message;
+                console.error(e);
+            } finally {
+                sendBtn.disabled = false;
+            }
+        };
     </script>
 </body>
 </html>
