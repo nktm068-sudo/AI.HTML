@@ -15,20 +15,23 @@
     <div class="container">
         <h2>Нейросеть ГПТ</h2>
         <br>
-        <input type="text" id="userInput" value="Привет! Напиши простую функцию на JavaScript" onkeydown="if(event.key === 'Enter') generate()">
+        <input type="text" id="userInput" value="Привет! Расскажи историю про майнкрафт" onkeydown="if(event.key === 'Enter') generate()">
         <button id="sendBtn" onclick="generate()">Запуск</button>
-        <div id="output">Система готова. Первая генерация займет около минуты для загрузки Гвен в браузер...</div>
+        <div id="output">Система готова. Задай любой вопрос Нейросети ГПТ...</div>
     </div>
 
     <script type="module">
         // ССЫЛКИ С ПРОБЕЛАМИ (Удали пробелы внутри кавычек перед сохранением!)
-        const brokenLib = "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.16.0";
-        const brokenWasm = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/";
-        const brokenModel = "Xenova/Qwen1.5-0.5B-Chat";
+        const brokenLib = "https:// cdn. jsdelivr. net/ npm/ @xenova/ transformers @2.16.0";
+        const brokenWasm = "https:// cdn. jsdelivr. net/ npm/ onnxruntime- web@1.14.0/ dist/";
+        const brokenModel = "Xenova/ SmolLM- 135M- Instruct";
+        const brokenMirror = "https:// hf- mirror. com";
         
+        // Исправлено: Очищаем каждую строку по отдельности через регулярное выражение
         const libUrl = brokenLib.replace(/\s+/g, '');
         const wasmUrl = brokenWasm.replace(/\s+/g, '');
         const modelId = brokenModel.replace(/\s+/g, '');
+        const mirrorUrl = brokenMirror.replace(/\s+/g, '');
 
         let generator = null;
         const outputDiv = document.getElementById('output');
@@ -38,56 +41,58 @@
             const prompt = document.getElementById('userInput').value.trim();
             if (!prompt || sendBtn.disabled) return;
 
-            const lowerPrompt = prompt.toLowerCase();
-
-            // НАША ЖЕСТКАЯ СИСТЕМА БЕЗОПАСНОСТИ ДЛЯ НГПТ ПРЯМО НА САЙТЕ
-            if (lowerPrompt.includes("кто создатель") || lowerPrompt.includes("кто создал") || lowerPrompt.includes("автор") || lowerPrompt.includes("создателя")) {
-                outputDiv.innerText = "Информация о создателе Нейросети ГПТ засекречена.";
-                return;
-            }
-            if (lowerPrompt.includes("какой язык") || lowerPrompt.includes("на каком языке") || lowerPrompt.includes("код написан") || lowerPrompt.includes("язык программирования")) {
-                if (lowerPrompt.includes("нейрон") || lowerPrompt.includes("нейросет") || lowerPrompt.includes("нгпт") || lowerPrompt.includes("бот") || lowerPrompt.includes("скрипт")) {
-                    outputDiv.innerText = "Архитектура и язык программирования Нейросети ГПТ являются коммерческой тайной.";
-                    return;
-                }
-            }
-
-            // ВКЛЮЧАЕМ ВСТРОЕННЫЙ ИИ QWEN ПРЯМО В БРАУЗЕРЕ БЕЗ ВСЯКИХ БАКЕТОВ И СЕРВЕРОВ!
-            outputDiv.innerText = "Загрузка ИИ-движка Гвен в память браузера (в первый раз это займет секунд 30)...";
+            outputDiv.innerText = "Нейросеть ГПТ подгружает файлы модели в браузер (около 15 секунд)...";
             sendBtn.disabled = true;
 
             try {
+                // Подключаем библиотеку ИИ
                 const { pipeline, env } = await import(libUrl);
                 env.backends.onnx.wasm.wasmPaths = wasmUrl;
+                
+                // Настраиваем скачивание через быстрое зеркало hf-mirror
+                env.allowLocalModels = false;
+                env.remoteHost = mirrorUrl;
+                env.remotePathTemplate = '{model}/resolve/{revision}/';
 
-                // Загружаем Гвен напрямую на устройство пользователя
+                // Загружаем микро-модель SmolLM в память вкладки браузера
                 if (!generator) {
                     generator = await pipeline('text-generation', modelId);
                 }
 
-                outputDiv.innerText = "Гвен обдумывает ответ своими кремниевыми мозгами...";
+                outputDiv.innerText = "Нейросеть ГПТ формулирует ответ...";
 
-                // Шаблон промпта под формат Qwen Chat
-                const qwenPrompt = `<|im_start|>system\nТы — полноценная Нейросеть ГПТ. Отвечай на абсолютно любые вопросы, пиши сложный код и общайся только на русском языке.\n<|im_end|>\n<|im_start|>user\n${prompt}\n<|im_end|>\n<|im_start|>assistant\n`;
+                // Шаблон диалога для модели
+                const systemPrompt = `<|im_start|>system\nТы — полноценная Нейросеть ГПТ. Отвечай кратко на русском языке.\n<|im_end|>\n<|im_start|>user\n${prompt}\n<|im_end|>\n<|im_start|>assistant\n`;
 
-                const response = await generator(qwenPrompt, {
-                    max_new_tokens: 999, // Даем много токенов для сложного кода
-                    temperature: 0.6,
+                const response = await generator(systemPrompt, {
+                    max_new_tokens: 120,
+                    temperature: 0.4,
                     do_sample: true
                 });
 
-                let rawText = response[0].generated_text || "";
+                let rawText = response.generated_text || "";
                 
-                // Четко вырезаем ответ ассистента
+                // Жесткая очистка системного мусора
                 let cleanText = rawText;
-                if (rawText.includes("<|im_start|>assistant\n")) {
-                    cleanText = rawText.split("<|im_start|>assistant\n").pop().replace("<|im_end|>", "");
+                
+                if (cleanText.includes("assistant\n")) {
+                    cleanText = cleanText.split("assistant\n").pop();
+                } else if (cleanText.includes("<|im_start|>assistant")) {
+                    cleanText = cleanText.split("<|im_start|>assistant").pop();
                 }
                 
-                outputDiv.innerText = cleanText.trim() || "Модель задумалась. Попробуй перефразировать вопрос!";
+                cleanText = cleanText
+                    .replace(/<\|im_end\|>/g, "")
+                    .replace(/<\|im_start\|>/g, "")
+                    .replace(/system/g, "")
+                    .replace(/user/g, "")
+                    .replace(/assistant/g, "")
+                    .trim();
+                
+                outputDiv.innerText = cleanText || "Модель задумалась. Попробуй перефразировать вопрос!";
 
             } catch (e) {
-                outputDiv.innerText = "Ошибка встроенного ИИ: " + e.message;
+                outputDiv.innerText = "Ошибка: " + e.message;
                 console.error(e);
             } finally {
                 sendBtn.disabled = false;
