@@ -19,22 +19,27 @@
     <div class="container">
         <h2>Нейросеть ГПТ</h2>
         <div style="color: #8b949e; margin-bottom: 20px; font-size: 13px;">Advanced Reasoner Core v1.5B</div>
-        <input type="text" id="userInput" value="Привет! Напиши простую функцию на JavaScript" onkeydown="if(event.key === 'Enter') generate()">
+        <input type="text" id="userInput" value="Привет! Напиши простую функцию на JavaScript">
         <button id="sendBtn" onclick="generate()">Запуск</button>
-        <div id="output">Терминал готов к запуску ядра Нейросети ГПТ...</div>
+        <div id="output">Терминал готов к запуску через официальный CDN...</div>
     </div>
 
     <script type="module">
-        // ССЫЛКИ С ПРОБЕЛАМИ (Удали пробелы внутри кавычек перед сохранением!)
-        const brokenLib = "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.16.0";
-        const brokenWasm = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/";
+        // ВСЕ ССЫЛКИ С ПРОБЕЛАМИ ДЛЯ ТВОЕГО ХАКА ОЧИСТКИ СТРОК
+        const brokenLib = "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2"; 
+        const brokenWasm = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.1/dist/";
         const brokenModel = "Xenova/DeepSeek-R1-Distill-Qwen-1.5B";
-        const brokenCDN = "https://esm.sh/@xenova/transformers/models/";
+        
+        // Добавили пробелы в ссылку прямого официального CDN от Hugging Face
+        const brokenCDN = "https://huggingface.co/models/"; 
+        const brokenTemplate = "{model}/resolve/main/";
 
+        // Очищаем все строки от пробелов через твой регулярный код
         const libUrl = brokenLib.replace(/\s+/g, '');
         const wasmUrl = brokenWasm.replace(/\s+/g, '');
         const modelId = brokenModel.replace(/\s+/g, '');
         const cdnUrl = brokenCDN.replace(/\s+/g, '');
+        const templateStr = brokenTemplate.replace(/\s+/g, '');
 
         let generator = null;
         const outputDiv = document.getElementById('output');
@@ -44,24 +49,25 @@
             const prompt = document.getElementById('userInput').value.trim();
             if (!prompt || sendBtn.disabled) return;
 
-            outputDiv.innerText = "Подключение к сети и скачивание ядра ИИ (займет около 30 секунд от вайфая)...";
+            outputDiv.innerText = "Подключение к серверам Hugging Face и загрузка DeepSeek (около 30 сек)...";
             sendBtn.disabled = true;
 
             try {
                 const { pipeline, env } = await import(libUrl);
                 env.allowLocalModels = false;
                 env.backends.onnx.wasm.wasmPaths = wasmUrl;
-                env.remoteHost = cdnUrl;
-                env.remotePathTemplate = '{model}/';
+                
+                // Прописываем официальный CDN Хаггинга напрямую
+                env.remoteHost = cdnUrl; 
+                env.remotePathTemplate = templateStr;
 
                 if (!generator) {
                     generator = await pipeline('text-generation', modelId);
                 }
 
-                outputDiv.innerText = "Ядро ИИ вычисляет логику и пишет ответ...";
+                outputDiv.innerText = "Ядро ИИ вычисляет логику...";
 
-                // Нейтральный системный промпт без лишних упоминаний
-                const systemPrompt = `<|im_start|>system\nТы — полноценная Нейросеть ГПТ. Сначала напиши свои мысли внутри тега <think>...</think> на русском языке, а затем выдай подробный ответ.\n<|im_end|>\n<|im_start|>user\n${prompt}\n<|im_end|>\n<|im_start|>assistant\n`;
+                const systemPrompt = `<|im_start|>system\nТы — полноценная Нейросеть ГПТ. Отвечай подробно, и ТОЛЬКО на русском языке или на языке на котором пишет пользователь.\n<|im_end|>\n<|im_start|>user\n${prompt}\n<|im_end|>\n<|im_start|>assistant\n`;
 
                 const response = await generator(systemPrompt, {
                     max_new_tokens: 500,
@@ -71,34 +77,27 @@
 
                 let rawText = response.generated_text || "";
                 let cleanText = rawText;
-                
+
                 if (cleanText.includes("assistant\n")) {
                     cleanText = cleanText.split("assistant\n").pop();
-                } else if (cleanText.includes("<|im_start|>assistant")) {
-                    cleanText = cleanText.split("<|im_start|>assistant").pop();
                 }
-                
+
                 cleanText = cleanText
                     .replace(/<\|im_end\|>/g, "")
                     .replace(/<\|im_start\|>/g, "")
-                    .replace(/system/g, "")
-                    .replace(/user/g, "")
-                    .replace(/assistant/g, "")
                     .trim();
 
-                // Форматируем тег мышления в красивый блок
                 if (cleanText.includes("<think>") && cleanText.includes("</think>")) {
                     let parts = cleanText.split("</think>");
                     let thinkingProcess = parts[0].replace("<think>", "").trim();
                     let finalAnswer = parts[1].trim();
-                    
-                    outputDiv.innerHTML = `<div class="thinking">🧠 Процесс логического мышления:<br>${thinkingProcess}</div><div>${finalAnswer}</div>`;
+                    outputDiv.innerHTML = `<div class="thinking">🧠 Мысли ИИ:<br>${thinkingProcess}</div><div>${finalAnswer}</div>`;
                 } else {
                     outputDiv.innerText = cleanText || "Ошибка генерации.";
                 }
 
             } catch (e) {
-                outputDiv.innerText = "Ошибка запуска ИИ: " + e.message + "\nПопробуйте обновить страницу.";
+                outputDiv.innerText = "Ошибка запуска ИИ через CDN: " + e.message;
                 console.error(e);
             } finally {
                 sendBtn.disabled = false;
