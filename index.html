@@ -79,30 +79,43 @@
 
 <div class="container">
     <h2>Нейросеть ГПТ</h2>
-    <div style="color: #8b949e; margin-bottom: 20px; font-size: 13px;">Advanced Reasoner Core v1.5B + База Знаний</div>
-    <input type="text" id="userInput" value="Кто такая Гвен и сколько будет 1+1?">
+    <div style="color: #8b949e; margin-bottom: 20px; font-size: 13px;">Advanced Reasoner Core v1.5B</div>
+    <input type="text" id="userInput" value="Сколько будет 256 умножить на 4? Напиши ответ на русском.">
     <button id="sendBtn" onclick="generate()">Запуск</button>
-    <div id="output">Терминал готов к запуску через официальное зеркало hf-mirror.com...</div>
+    <div id="output">Terminal ready. Waiting for initialization...</div>
 </div>
 
 <script type="module">
+// ИМПОРТИРУЕМ УМНУЮ МОДЕЛЬ НАПРЯМУЮ С HUGGING FACE БЕЗ CORS-БЛОКИРОВОК
 const brokenLib = "ht tps:// cdn. jsd elivr. net/ npm/ @xen ova/ trans form ers@2. 17. 2";
-const brokenWasm = "ht tps:// cdn. jsd elivr. net/ npm/ onnx runt ime- web@1. 17. 1/ dist/";
 const brokenModel = "on nx- comm unity/ Qw en2. 5-0. 5B- Ins truct";
-const brokenMirror = "ht tps:// hf- mir ror. com/";
-const brokenTemplate = "{mo del}/ res olve/ ma in/";
 
 const libUrl = brokenLib.replace(/\s+/g, '');
-const wasmUrl = brokenWasm.replace(/\s+/g, '');
 const modelId = brokenModel.replace(/\s+/g, '');
-const mirrorUrl = brokenMirror.replace(/\s+/g, '');
-const templateStr = brokenTemplate.replace(/\s+/g, '');
 
 let generator = null;
 const outputDiv = document.getElementById('output');
 const sendBtn = document.getElementById('sendBtn');
 
-        const systemPrompt = `<|im_start|>system\nТы — сверхрациональный ИИ. Отвечай строго на русском языке. Сначала пиши свои мысли в теге <think>, а затем давай чёткий ответ.\n${contextInstruction}<|im_end|>\n<|im_start|>user\n${prompt}\n<|im_end|>\n<|im_start|>assistant\n<think>\n`;
+window.generate = async function() {
+    const prompt = document.getElementById('userInput').value.trim();
+    if (!prompt || sendBtn.disabled) return;
+
+    outputDiv.innerText = "Подключение к Hugging Face и загрузка ИИ (около 30 сек)...";
+    sendBtn.disabled = true;
+
+    try {
+        const { pipeline, env } = await import(libUrl);
+        env.allowLocalModels = false;
+
+        if (!generator) {
+            generator = await pipeline('text-generation', modelId);
+        }
+
+        outputDiv.innerText = "Ядро ИИ вычисляет логику...";
+
+        // ЧИСТЫЙ СИСТЕМНЫЙ ПРОМТ БЕЗ ПЕРЕМЕННЫХ БАЗЫ ДАННЫХ
+        const systemPrompt = `<|im_start|>system\nТы — сверхрациональный ИИ. Отвечай строго на русском языке. Сначала пиши свои мысли в теге <think>, а затем давай чёткий ответ.\n<|im_end|>\n<|im_start|>user\n${prompt}\n<|im_end|>\n<|im_start|>assistant\n<think>\n`;
         
         const response = await generator(systemPrompt, {
             max_new_tokens: 300,
@@ -131,10 +144,10 @@ const sendBtn = document.getElementById('sendBtn');
             let parts = cleanText.split("</think>");
             outputDiv.innerHTML = `<div class="thinking">🧠 Мысли ИИ:<br>Анализ завершен успешно.</div><div>${parts[1].trim()}</div>`;
         } else {
-            outputDiv.innerHTML = `<div class="thinking">🧠 Мысли ИИ:<br>Логический анализ выполнен.</div><div>${cleanText}</div>`;
+            outputDiv.innerHTML = `<div class="thinking">🧠 Мысли ИИ:<br>Логический анализ выполнен успешно.</div><div>${cleanText}</div>`;
         }
     } catch (e) {
-        outputDiv.innerText = "Ошибка вычислений: " + e.message;
+        outputDiv.innerText = "Ошибка запуска ИИ: " + e.message;
         console.error(e);
     } finally {
         sendBtn.disabled = false;
