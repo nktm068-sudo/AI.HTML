@@ -81,22 +81,18 @@
 <div class="container">
     <h2>Нейросеть ГПТ</h2>
     <div style="color: #8b949e; margin-bottom: 20px; font-size: 13px;">Advanced Reasoner Core v1.5B</div>
-    <input type="text" id="userInput" value="Сколько будет 256 умножить на 4? Напиши ответ на русском.">
+     <h2>Рад видеть вас сегодня.</h2>
+    <input type="text" id="userInput" value="Привет!">
     <button id="sendBtn" onclick="generate()">Запуск</button>
     <div id="output">Terminal ready. Waiting for initialization...</div>
 </div>
 
 <script type="module">
-// ВОЗВРАЩАЕМ СВЯЗКУ ЗЕРКАЛА И СТАБИЛЬНОЙ МОДЕЛИ
 const brokenLib = "ht tps:// cdn. jsd elivr. net/ npm/ @xen ova/ trans form ers@2. 17. 2";
 const brokenModel = "Xe no va/ Qw en1. 5-0. 5B- Ch at";
-const brokenMirror = "ht tps:// hf- mir ror. com/";
-const brokenTemplate = "{mo del}/ res olve/ ma in/";
 
 const libUrl = brokenLib.replace(/\s+/g, '');
 const modelId = brokenModel.replace(/\s+/g, '');
-const mirrorUrl = brokenMirror.replace(/\s+/g, '');
-const templateStr = brokenTemplate.replace(/\s+/g, '');
 
 let generator = null;
 const outputDiv = document.getElementById('output');
@@ -106,16 +102,18 @@ window.generate = async function() {
     const prompt = document.getElementById('userInput').value.trim();
     if (!prompt || sendBtn.disabled) return;
 
-    outputDiv.innerText = "Подключение к hf-mirror.com и загрузка файлов ядра Qwen (около 30 сек)...";
+    outputDiv.innerText = "Подключение к стабильному хабу и загрузка файлов (около 30 сек)...";
     sendBtn.disabled = true;
 
     try {
         const { pipeline, env } = await import(libUrl);
+        
         env.allowLocalModels = false;
         
-        // ЖЁСТКО ПРОПИСЫВАЕМ ОФИЦИАЛЬНОЕ ЗЕРКАЛО В НАСТРОЙКИ БИБЛИОТЕКИ
-        env.remoteHost = mirrorUrl;
-        env.remotePathTemplate = templateStr;
+        // ТВОЯ ССЫЛКА С ПРОБЕЛАМИ, КОТОРЫЕ ТЫ УДАЛИШЬ САМ ПРЯМО ВНУТРИ КАВЫЧЕК:
+        env.remoteHost = "https://huggingface.co/";
+        
+        env.remotePathTemplate = "{model}/resolve/main/";
 
         if (!generator) {
             generator = await pipeline('text-generation', modelId);
