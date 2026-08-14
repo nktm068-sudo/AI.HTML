@@ -102,51 +102,6 @@ let generator = null;
 const outputDiv = document.getElementById('output');
 const sendBtn = document.getElementById('sendBtn');
 
-// Умная функция поиска по твоей базе данных
-function searchKnowledge(query) {
-    let lowerQuery = query.toLowerCase();
-    let foundFacts = [];
-    
-    for (let item of KNOWLEDGE_BASE) {
-        for (let keyword of item.keywords) {
-            if (lowerQuery.includes(keyword)) {
-                foundFacts.push(item.fact);
-                break;
-            }
-        }
-    }
-    return foundFacts.join("\n");
-}
-
-window.generate = async function() {
-    const prompt = document.getElementById('userInput').value.trim();
-    if (!prompt || sendBtn.disabled) return;
-
-    outputDiv.innerText = "Сканирование базы данных и запуск ИИ...";
-    sendBtn.disabled = true;
-
-    // 1. Ищем информацию в нашей локальной базе данных
-    const localKnowledge = searchKnowledge(prompt);
-
-    try {
-        const { pipeline, env } = await import(libUrl);
-        env.allowLocalModels = false;
-        env.backends.onnx.wasm.wasmPaths = wasmUrl;
-        env.remoteHost = mirrorUrl;
-        env.remotePathTemplate = templateStr;
-
-        if (!generator) {
-            generator = await pipeline('text-generation', modelId);
-        }
-
-        outputDiv.innerText = "Ядро ИИ обрабатывает данные из базы...";
-
-        // 2. Если нашли точный факт — жестко заталкиваем его прямо в инструкцию ИИ
-        let contextInstruction = "";
-        if (localKnowledge) {
-            contextInstruction = `Используй для точного ответа следующие проверенные факты из базы данных:\n${localKnowledge}\n`;
-        }
-
         const systemPrompt = `<|im_start|>system\nТы — сверхрациональный ИИ. Отвечай строго на русском языке. Сначала пиши свои мысли в теге <think>, а затем давай чёткий ответ.\n${contextInstruction}<|im_end|>\n<|im_start|>user\n${prompt}\n<|im_end|>\n<|im_start|>assistant\n<think>\n`;
         
         const response = await generator(systemPrompt, {
