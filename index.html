@@ -58,6 +58,7 @@
             text-align: left;
             min-height: 120px;
             white-space: pre-wrap;
+            word-break: break-all;
             color: #e6edf3;
         }
         h2 {
@@ -86,12 +87,16 @@
 </div>
 
 <script type="module">
-// ИМПОРТИРУЕМ УМНУЮ МОДЕЛЬ НАПРЯМУЮ С HUGGING FACE БЕЗ CORS-БЛОКИРОВОК
+// ВОЗВРАЩАЕМ СВЯЗКУ ЗЕРКАЛА И СТАБИЛЬНОЙ МОДЕЛИ
 const brokenLib = "ht tps:// cdn. jsd elivr. net/ npm/ @xen ova/ trans form ers@2. 17. 2";
-const brokenModel = "on nx- comm unity/ Qw en2. 5-0. 5B- Ins truct";
+const brokenModel = "Xe no va/ Qw en1. 5-0. 5B- Ch at";
+const brokenMirror = "ht tps:// hf- mir ror. com/";
+const brokenTemplate = "{mo del}/ res olve/ ma in/";
 
 const libUrl = brokenLib.replace(/\s+/g, '');
 const modelId = brokenModel.replace(/\s+/g, '');
+const mirrorUrl = brokenMirror.replace(/\s+/g, '');
+const templateStr = brokenTemplate.replace(/\s+/g, '');
 
 let generator = null;
 const outputDiv = document.getElementById('output');
@@ -101,12 +106,16 @@ window.generate = async function() {
     const prompt = document.getElementById('userInput').value.trim();
     if (!prompt || sendBtn.disabled) return;
 
-    outputDiv.innerText = "Подключение к Hugging Face и загрузка ИИ (около 30 сек)...";
+    outputDiv.innerText = "Подключение к hf-mirror.com и загрузка файлов ядра Qwen (около 30 сек)...";
     sendBtn.disabled = true;
 
     try {
         const { pipeline, env } = await import(libUrl);
         env.allowLocalModels = false;
+        
+        // ЖЁСТКО ПРОПИСЫВАЕМ ОФИЦИАЛЬНОЕ ЗЕРКАЛО В НАСТРОЙКИ БИБЛИОТЕКИ
+        env.remoteHost = mirrorUrl;
+        env.remotePathTemplate = templateStr;
 
         if (!generator) {
             generator = await pipeline('text-generation', modelId);
@@ -114,7 +123,6 @@ window.generate = async function() {
 
         outputDiv.innerText = "Ядро ИИ вычисляет логику...";
 
-        // ЧИСТЫЙ СИСТЕМНЫЙ ПРОМТ БЕЗ ПЕРЕМЕННЫХ БАЗЫ ДАННЫХ
         const systemPrompt = `<|im_start|>system\nТы — сверхрациональный ИИ. Отвечай строго на русском языке. Сначала пиши свои мысли в теге <think>, а затем давай чёткий ответ.\n<|im_end|>\n<|im_start|>user\n${prompt}\n<|im_end|>\n<|im_start|>assistant\n<think>\n`;
         
         const response = await generator(systemPrompt, {
@@ -123,7 +131,7 @@ window.generate = async function() {
             do_sample: true
         });
 
-        let rawText = response[0]?.generated_text || "";
+        let rawText = response?.generated_text || "";
         let cleanText = rawText;
 
         if (cleanText.includes("assistant\n")) {
@@ -137,12 +145,12 @@ window.generate = async function() {
 
         if (cleanText.includes("<think>") && cleanText.includes("</think>")) {
             let parts = cleanText.split("</think>");
-            let thinkingProcess = parts[0].replace("<think>", "").trim();
-            let finalAnswer = parts[1].trim();
+            let thinkingProcess = parts.replace("<think>", "").trim();
+            let finalAnswer = parts.trim();
             outputDiv.innerHTML = `<div class="thinking">🧠 Мысли ИИ:<br>${thinkingProcess}</div><div>${finalAnswer}</div>`;
         } else if (cleanText.includes("</think>")) {
             let parts = cleanText.split("</think>");
-            outputDiv.innerHTML = `<div class="thinking">🧠 Мысли ИИ:<br>Анализ завершен успешно.</div><div>${parts[1].trim()}</div>`;
+            outputDiv.innerHTML = `<div class="thinking">🧠 Мысли ИИ:<br>Анализ завершен успешно.</div><div>${parts.trim()}</div>`;
         } else {
             outputDiv.innerHTML = `<div class="thinking">🧠 Мысли ИИ:<br>Логический анализ выполнен успешно.</div><div>${cleanText}</div>`;
         }
