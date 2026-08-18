@@ -74,14 +74,25 @@
             padding-left: 10px;
             margin-bottom: 15px;
         }
+        .subtitle {
+            color: #8b949e; 
+            margin-bottom: 20px; 
+            font-size: 13px;
+        }
+        .welcome-msg {
+            color: #58a6ff; 
+            font-size: 20px; 
+            font-weight: bold; 
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h2>Нейросеть ГПТ</h2>
-    <div style="color: #8b949e; margin-bottom: 20px; font-size: 13px;">Advanced Reasoner Core v1.5B</div>
-     <h2>Рад видеть вас сегодня.</h2>
+    <div class="subtitle">Advanced Reasoner Core v1.5B</div>
+    <div class="welcome-msg">Рад видеть вас сегодня.</div>
     <input type="text" id="userInput" value="Привет!">
     <button id="sendBtn" onclick="generate()">Запуск</button>
     <div id="output">Terminal ready. Waiting for initialization...</div>
@@ -97,9 +108,18 @@ const modelId = brokenModel.replace(/\s+/g, '');
 let generator = null;
 const outputDiv = document.getElementById('output');
 const sendBtn = document.getElementById('sendBtn');
+const userInput = document.getElementById('userInput');
+
+// ФАКТ: Слушатель нажатия Enter на клавиатуре для Верити
+userInput.addEventListener('keydown', function(event) {
+    if (event.key === 'Enter') {
+        event.preventDefault(); // Защита от лишних перезагрузок
+        window.generate();
+    }
+});
 
 window.generate = async function() {
-    const prompt = document.getElementById('userInput').value.trim();
+    const prompt = userInput.value.trim();
     if (!prompt || sendBtn.disabled) return;
 
     outputDiv.innerText = "Подключение к стабильному хабу и загрузка файлов (около 30 сек)...";
@@ -109,10 +129,7 @@ window.generate = async function() {
         const { pipeline, env } = await import(libUrl);
         
         env.allowLocalModels = false;
-        
-        // ТВОЯ ССЫЛКА С ПРОБЕЛАМИ, КОТОРЫЕ ТЫ УДАЛИШЬ САМ ПРЯМО ВНУТРИ КАВЫЧЕК:
-        env.remoteHost = "https://huggingface.co/";
-        
+        env.remoteHost = "https://huggingface.co";
         env.remotePathTemplate = "{model}/resolve/main/";
 
         if (!generator) {
@@ -129,7 +146,7 @@ window.generate = async function() {
             do_sample: true
         });
 
-        let rawText = response?.generated_text || "";
+        let rawText = response?.[0]?.generated_text || "";
         let cleanText = rawText;
 
         if (cleanText.includes("assistant\n")) {
@@ -141,14 +158,15 @@ window.generate = async function() {
             .replace(/<\|im_start\|>/g, "")
             .trim();
 
+        // ФАКТ: Исправленная обработка массива из split() для разделения размышлений и ответа
         if (cleanText.includes("<think>") && cleanText.includes("</think>")) {
             let parts = cleanText.split("</think>");
-            let thinkingProcess = parts.replace("<think>", "").trim();
-            let finalAnswer = parts.trim();
+            let thinkingProcess = parts[0].replace("<think>", "").trim();
+            let finalAnswer = parts[1].trim();
             outputDiv.innerHTML = `<div class="thinking">🧠 Мысли ИИ:<br>${thinkingProcess}</div><div>${finalAnswer}</div>`;
         } else if (cleanText.includes("</think>")) {
             let parts = cleanText.split("</think>");
-            outputDiv.innerHTML = `<div class="thinking">🧠 Мысли ИИ:<br>Анализ завершен успешно.</div><div>${parts.trim()}</div>`;
+            outputDiv.innerHTML = `<div class="thinking">🧠 Мысли ИИ:<br>Анализ завершен успешно.</div><div>${parts[0].trim()}</div>`;
         } else {
             outputDiv.innerHTML = `<div class="thinking">🧠 Мысли ИИ:<br>Логический анализ выполнен успешно.</div><div>${cleanText}</div>`;
         }
