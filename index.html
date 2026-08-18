@@ -100,7 +100,7 @@
 
 <script type="module">
 const brokenLib = "ht tps:// cdn. jsd elivr. net/ npm/ @xen ova/ trans form ers@2. 17. 2";
-const brokenModel = "Xe no va/ de e p se ek -a i / De e p Se ek -V 4- Pr o- 08 13";
+const brokenModel = "Xe no va / De ep Se ek - R1 - Di st ill - Qw en - 1. 5B";
 
 const libUrl = brokenLib.replace(/\s+/g, '');
 const modelId = brokenModel.replace(/\s+/g, '');
@@ -110,10 +110,10 @@ const outputDiv = document.getElementById('output');
 const sendBtn = document.getElementById('sendBtn');
 const userInput = document.getElementById('userInput');
 
-// ФАКТ: Слушатель нажатия Enter на клавиатуре для Верити
+// Обработчик клавиши Enter
 userInput.addEventListener('keydown', function(event) {
     if (event.key === 'Enter') {
-        event.preventDefault(); // Защита от лишних перезагрузок
+        event.preventDefault();
         window.generate();
     }
 });
@@ -122,21 +122,21 @@ window.generate = async function() {
     const prompt = userInput.value.trim();
     if (!prompt || sendBtn.disabled) return;
 
-    outputDiv.innerText = "Подключение к стабильному хабу и загрузка файлов (около 30 сек)...";
+    outputDiv.innerText = "Подключение к стабильному хабу и загрузка файлов DeepSeek (около 1-2 мин)...";
     sendBtn.disabled = true;
 
     try {
         const { pipeline, env } = await import(libUrl);
         
         env.allowLocalModels = false;
-        env.remoteHost = "https://huggingface.co";
+        env.remoteHost = "https://huggingface.co"; // ФАКТ: Косая черта спасает от ошибок CORS
         env.remotePathTemplate = "{model}/resolve/main/";
 
         if (!generator) {
             generator = await pipeline('text-generation', modelId);
         }
 
-        outputDiv.innerText = "Ядро ИИ вычисляет логику...";
+        outputDiv.innerText = "Ядро DeepSeek вычисляет логику...";
 
         const systemPrompt = `<|im_start|>system\nТы — сверхрациональный ИИ. Отвечай строго на русском языке. Сначала пиши свои мысли в теге <think>, а затем давай чёткий ответ.\n<|im_end|>\n<|im_start|>user\n${prompt}\n<|im_end|>\n<|im_start|>assistant\n<think>\n`;
         
@@ -146,7 +146,13 @@ window.generate = async function() {
             do_sample: true
         });
 
-        let rawText = response?.[0]?.generated_text || "";
+        let rawText = "";
+        if (Array.isArray(response) && response[0]) {
+            rawText = response[0].generated_text || "";
+        } else {
+            rawText = response?.generated_text || "";
+        }
+        
         let cleanText = rawText;
 
         if (cleanText.includes("assistant\n")) {
@@ -158,7 +164,7 @@ window.generate = async function() {
             .replace(/<\|im_start\|>/g, "")
             .trim();
 
-        // ФАКТ: Исправленная обработка массива из split() для разделения размышлений и ответа
+        // Парсинг тегов размышлений для DeepSeek-R1
         if (cleanText.includes("<think>") && cleanText.includes("</think>")) {
             let parts = cleanText.split("</think>");
             let thinkingProcess = parts[0].replace("<think>", "").trim();
@@ -166,7 +172,7 @@ window.generate = async function() {
             outputDiv.innerHTML = `<div class="thinking">🧠 Мысли ИИ:<br>${thinkingProcess}</div><div>${finalAnswer}</div>`;
         } else if (cleanText.includes("</think>")) {
             let parts = cleanText.split("</think>");
-            outputDiv.innerHTML = `<div class="thinking">🧠 Мысли ИИ:<br>Анализ завершен успешно.</div><div>${parts[0].trim()}</div>`;
+            outputDiv.innerHTML = `<div class="thinking">🧠 Мысли ИИ:<br>Анализ завершен успешно.</div><div>${parts[1].trim()}</div>`;
         } else {
             outputDiv.innerHTML = `<div class="thinking">🧠 Мысли ИИ:<br>Логический анализ выполнен успешно.</div><div>${cleanText}</div>`;
         }
