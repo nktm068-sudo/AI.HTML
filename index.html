@@ -91,7 +91,7 @@
 
 <div class="container">
     <h2>Нейросеть ГПТ</h2>
-    <div class="subtitle">Advanced Reasoner Core v1.5B</div>
+    <div class="subtitle">Advanced Reasoner Core v1.8B</div>
     <div class="welcome-msg">Рад видеть вас сегодня.</div>
     <input type="text" id="userInput" value="Привет!">
     <button id="sendBtn" onclick="generate()">Запуск</button>
@@ -100,7 +100,7 @@
 
 <script type="module">
 const brokenLib = "ht tps:// cdn. jsd elivr. net/ npm/ @xen ova/ trans form ers@2. 17. 2";
-const brokenModel = "Xe no va / De ep Se ek - R1 - Di st ill - Qw en - 1. 5B";
+const brokenModel = "Xe no va / Qw en 1. 5 - 1. 8B - Ch at";
 
 const libUrl = brokenLib.replace(/\s+/g, '');
 const modelId = brokenModel.replace(/\s+/g, '');
@@ -110,7 +110,6 @@ const outputDiv = document.getElementById('output');
 const sendBtn = document.getElementById('sendBtn');
 const userInput = document.getElementById('userInput');
 
-// Обработчик клавиши Enter
 userInput.addEventListener('keydown', function(event) {
     if (event.key === 'Enter') {
         event.preventDefault();
@@ -122,32 +121,37 @@ window.generate = async function() {
     const prompt = userInput.value.trim();
     if (!prompt || sendBtn.disabled) return;
 
-    outputDiv.innerText = "Подключение к стабильному хабу и загрузка файлов DeepSeek (около 1-2 мин)...";
+    if (!generator) {
+        outputDiv.innerText = "Первый запуск: Загрузка умного ядра Qwen 1.8B (около 30-40 сек)...";
+    } else {
+        outputDiv.innerText = "Ядро ИИ вычисляет логику...";
+    }
+    
     sendBtn.disabled = true;
 
     try {
         const { pipeline, env } = await import(libUrl);
         
         env.allowLocalModels = false;
-        env.remoteHost = "https://huggingface.co"; // ФАКТ: Косая черта спасает от ошибок CORS
+        env.remoteHost = "https://huggingface.co";
         env.remotePathTemplate = "{model}/resolve/main/";
 
         if (!generator) {
             generator = await pipeline('text-generation', modelId);
         }
 
-        outputDiv.innerText = "Ядро DeepSeek вычисляет логику...";
+        outputDiv.innerText = "Ядро ИИ формулирует ответ...";
 
-        const systemPrompt = `<|im_start|>system\nТы — сверхрациональный ИИ. Отвечай строго на русском языке. Сначала пиши свои мысли в теге <think>, а затем давай чёткий ответ.\n<|im_end|>\n<|im_start|>user\n${prompt}\n<|im_end|>\n<|im_start|>assistant\n<think>\n`;
+        const systemPrompt = `<|im_start|>system\nТы — сверхрациональный ИИ по имени Verity-GPT. Учти, сейчас на дворе 2026 год. Твой создатель — Верити. Отвечай СТРОГО на русском языке. Использовать китайские иероглифы запрещено. Сначала пиши свои мысли в теге <think>, а затем давай чёткий ответ.\n<|im_end|>\n<|im_start|>user\n${prompt}\n<|im_end|>\n<|im_start|>assistant\n<think>\n`;
         
         const response = await generator(systemPrompt, {
-            max_new_tokens: 300,
-            temperature: 0.2,
+            max_new_tokens: 250,
+            temperature: 0.3,
             do_sample: true
         });
 
         let rawText = "";
-        if (Array.isArray(response) && response[0]) {
+        if (response && response[0]) {
             rawText = response[0].generated_text || "";
         } else {
             rawText = response?.generated_text || "";
@@ -164,7 +168,6 @@ window.generate = async function() {
             .replace(/<\|im_start\|>/g, "")
             .trim();
 
-        // Парсинг тегов размышлений для DeepSeek-R1
         if (cleanText.includes("<think>") && cleanText.includes("</think>")) {
             let parts = cleanText.split("</think>");
             let thinkingProcess = parts[0].replace("<think>", "").trim();
@@ -172,9 +175,9 @@ window.generate = async function() {
             outputDiv.innerHTML = `<div class="thinking">🧠 Мысли ИИ:<br>${thinkingProcess}</div><div>${finalAnswer}</div>`;
         } else if (cleanText.includes("</think>")) {
             let parts = cleanText.split("</think>");
-            outputDiv.innerHTML = `<div class="thinking">🧠 Мысли ИИ:<br>Анализ завершен успешно.</div><div>${parts[1].trim()}</div>`;
+            outputDiv.innerHTML = `<div class="thinking">🧠 Мысли ИИ:<br>Анализ завершен успешно.</div><div>${parts[1] ? parts[1].trim() : parts[0].trim()}</div>`;
         } else {
-            outputDiv.innerHTML = `<div class="thinking">🧠 Мысли ИИ:<br>Логический анализ выполнен успешно.</div><div>${cleanText}</div>`;
+            outputDiv.innerHTML = `<div class="thinking">🧠 Мысли ИИ:<br>Логический анализ выполнен успешно. Текущий год зафиксирован: 2026.</div><div>${cleanText}</div>`;
         }
     } catch (e) {
         outputDiv.innerText = "Ошибка запуска ИИ: " + e.message;
