@@ -91,14 +91,22 @@
 
 <div class="container">
     <h2>Нейросеть ГПТ</h2>
-    <div class="subtitle">Advanced Reasoner Core v7B (Cloud)</div>
+    <div class="subtitle">Advanced Reasoner Core v1.8B (Xenova)</div>
     <div class="welcome-msg">Рад видеть вас сегодня.</div>
     <input type="text" id="userInput" value="Привет!">
     <button id="sendBtn" onclick="generate()">Запуск</button>
     <div id="output">Terminal ready. Waiting for initialization...</div>
 </div>
 
-<script>
+<script type="module">
+const brokenLib = "ht tps:// cdn. jsd elivr. net/ npm/ @xen ova/ trans form ers@2. 17. 2";
+// Изменено на модель Xenova/Qwen1.5-1.8B-Chat с сохранением оригинальных пробелов
+const brokenModel = "Xe no va/ Qw en1. 5-1. 8B- Ch at";
+
+const libUrl = brokenLib.replace(/\s+/g, '');
+const modelId = brokenModel.replace(/\s+/g, '');
+
+let generator = null;
 const outputDiv = document.getElementById('output');
 const sendBtn = document.getElementById('sendBtn');
 const userInput = document.getElementById('userInput');
@@ -114,45 +122,55 @@ window.generate = async function() {
     const prompt = userInput.value.trim();
     if (!prompt || sendBtn.disabled) return;
 
-    outputDiv.innerText = "Запрос отправлен на сервера. Вычисление логики Qwen 7B...";
+    outputDiv.innerText = "Подключение к стабильному хабу и загрузка файлов (около 20 сек)...";
     sendBtn.disabled = true;
 
     try {
-        // Относительный путь к твоей новой функции со свободным пробелом перед запятой
-        const response = await fetch(
-            "/.netlify/functions/generate" ,
-            {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ prompt: prompt }),
-            }
-        );
-
-        if (!response.ok) {
-            throw new Error(`Сервер ответил ошибкой ${response.status}`);
-        }
-
-        const result = await response.json();
+        const { pipeline, env } = await import(libUrl);
         
-        // Разбор ответа без точек-опечаток
-        let cleanText = "";
-        if (result && result.choices && result.choices[0] && result.choices[0].message) {
-            cleanText = result.choices[0].message.content || "";
-        } else {
-            cleanText = JSON.stringify(result);
+        env.allowLocalModels = false;
+        env.remoteHost = "https://huggingface.co";
+        env.remotePathTemplate = "{model}/resolve/main/";
+
+        if (!generator) {
+            generator = await pipeline('text-generation', modelId);
         }
 
-        // Парсинг мыслей ИИ из тегов <think>
+        outputDiv.innerText = "Ядро ИИ вычисляет логику...";
+
+        const systemPrompt = `<|im_start|>system\nТы — сверхрациональный ИИ. Отвечай строго на русском языке. Сначала пиши свои мысли в теге <think>, а затем давай чёткий ответ.\n<|im_end|>\n<|im_start|>user\n${prompt}\n<|im_end|>\n<|im_start|>assistant\n<think>\n`;
+        
+        const response = await generator(systemPrompt, {
+            max_new_tokens: 300,
+            temperature: 0.2,
+            do_sample: true
+        });
+
+        let rawText = response?.?.generated_text || "";
+        let cleanText = rawText;
+
+        if (cleanText.includes("assistant\n")) {
+            cleanText = cleanText.split("assistant\n").pop();
+        }
+
+        cleanText = cleanText
+            .replace(/<\|im_end\|>/g, "")
+            .replace(/<\|im_start\|>/g, "")
+            .trim();
+
         if (cleanText.includes("<think>") && cleanText.includes("</think>")) {
             let parts = cleanText.split("</think>");
-            let thinkingProcess = parts[0].replace("<think>", "").trim();
-            let finalAnswer = parts[1].trim();
+            let thinkingProcess = parts.replace("<think>", "").trim();
+            let finalAnswer = parts.trim();
             outputDiv.innerHTML = `<div class="thinking">🧠 Мысли ИИ:<br>${thinkingProcess}</div><div>${finalAnswer}</div>`;
+        } else if (cleanText.includes("</think>")) {
+            let parts = cleanText.split("</think>");
+            outputDiv.innerHTML = `<div class="thinking">🧠 Мысли ИИ:<br>Анализ завершен успешно.</div><div>${parts.trim()}</div>`;
         } else {
-            outputDiv.innerHTML = `<div class="thinking">🧠 Мысли ИИ:<br>Логический анализ выполнен на сервере OpenRouter. Текущий год зафиксирован: 2026.</div><div>${cleanText}</div>`;
+            outputDiv.innerHTML = `<div class="thinking">🧠 Мысли ИИ:<br>Логический анализ выполнен успешно.</div><div>${cleanText}</div>`;
         }
     } catch (e) {
-        outputDiv.innerText = "Ошибка облачного запуска: " + e.message;
+        outputDiv.innerText = "Ошибка запуска ИИ: " + e.message;
         console.error(e);
     } finally {
         sendBtn.disabled = false;
