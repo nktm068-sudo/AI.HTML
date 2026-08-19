@@ -17,6 +17,14 @@ exports.handler = async function(event, context) {
         const { prompt } = JSON.parse(event.body);
         const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY; 
 
+        if (!OPENROUTER_API_KEY) {
+            return {
+                statusCode: 200,
+                headers,
+                body: JSON.stringify({ error_from_server: "Ошибка: Токен OPENROUTER_API_KEY не найден в настройках Netlify!" })
+            };
+        }
+
         // Запрос к OpenRouter со свободными пробелами перед запятой
         const response = await fetch(
             "https://openrouter.ai" ,
@@ -27,7 +35,8 @@ exports.handler = async function(event, context) {
                     "Authorization": `Bearer ${OPENROUTER_API_KEY}`
                 },
                 body: JSON.stringify({
-                    model: "qwen/qwen-2.5-7b-instruct:free", 
+                    // ИСПРАВЛЕНО: Вызываем основную модель Qwen, которая привязана к твоему ключу Alibaba Cloud
+                    model: "qwen/qwen-2.5-7b-instruct", 
                     messages: [
                         {
                             role: "system",
@@ -44,6 +53,16 @@ exports.handler = async function(event, context) {
         );
 
         const result = await response.json();
+        
+        // Если OpenRouter вернул ошибку конфигурации ключа или баланса
+        if (!response.ok) {
+            return {
+                statusCode: 200,
+                headers,
+                body: JSON.stringify({ error_from_server: result?.error?.message || JSON.stringify(result) })
+            };
+        }
+
         return {
             statusCode: 200,
             headers,
@@ -52,9 +71,10 @@ exports.handler = async function(event, context) {
 
     } catch (e) {
         return {
-            statusCode: 500,
+            statusCode: 200,
             headers,
-            body: JSON.stringify({ error: e.message })
+            body: JSON.stringify({ error_from_server: "Внутренняя ошибка функции: " + e.message })
         };
     }
 };
+
