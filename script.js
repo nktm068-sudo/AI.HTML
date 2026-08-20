@@ -89,11 +89,24 @@ window.generate = async function() {
 
         outputDiv.innerText = "Ядро ИИ вычисляет логику...";
 
-        const systemPrompt = `<|im_start|>system\nТы — сверхрациональный ИИ. Отвечай строго на русском языке. Сначала пиши свои мысли в теге <think>, а затем давай чёткий ответ.\n<|im_end|>\n<|im_start|>user\n${prompt}\n<|im_end|>\n<|im_start|>assistant\n<think>\n`;
+        // Анализ сообщения пользователя на мат и капс для изменения характера
+        const upperPrompt = prompt.toUpperCase();
+        const hasBadWords = /(блять|сука|нахуй|заебал|бля|нах|похуй|хуй|говно|пидор|еб)/i.test(prompt);
+        const isCapsAttack = prompt.length > 4 && prompt === upperPrompt;
+
+        let aiCharacter = "Ты — вежливый и полезный ИИ-ассистент. Отвечай строго на русском языке.";
+
+        if (hasBadWords || isCapsAttack) {
+            aiCharacter = "Ты — дерзкий, резкий и саркастичный ИИ. Твой собеседник грубит тебе или кричит, поэтому ты имеешь полное право отвечать ему колко, грубо, с сарказмом и на «ты», но оставайся в рамках правил и пиши на русском языке.";
+        }
+
+        const systemPrompt = `<|im_start|>system\n${aiCharacter}\n<|im_end|>\n<|im_start|>user\n${prompt}\n<|im_end|>\n<|im_start|>assistant\n`;
         
+        // Оптимальные параметры, чтобы нейросеть не плевалась пробелами
         const response = await generator(systemPrompt, {
-            max_new_tokens: 300,
-            temperature: 0.2,
+            max_new_tokens: 150,
+            temperature: 0.7,
+            repetition_penalty: 1.2,
             do_sample: true
         });
 
@@ -109,19 +122,13 @@ window.generate = async function() {
             .replace(/<\|im_start\|>/g, "")
             .trim();
 
-        let finalHtml = "";
-        if (cleanText.includes("<think>") && cleanText.includes("</think>")) {
-            let parts = cleanText.split("</think>");
-            let thinkingProcess = parts[0].replace("<think>", "").trim();
-            let finalAnswer = parts[1].trim();
-            finalHtml = `<div class="thinking">🧠 Мысли ИИ:<br>${thinkingProcess}</div><div>${finalAnswer}</div>`;
-        } else if (cleanText.includes("</think>")) {
-            let parts = cleanText.split("</think>");
-            let finalAnswer = parts[0].trim();
-            finalHtml = `<div class="thinking">🧠 Мысли ИИ:<br>Анализ завершен успешно.</div><div>${finalAnswer}</div>`;
-        } else {
-            finalHtml = `<div class="thinking">🧠 Мысли ИИ:<br>Логический анализ выполнен успешно.</div><div>${cleanText}</div>`;
-        }
+        // Защита от HTML-тегов в ответе нейросети, чтобы не ломалась верстка
+        let safeText = cleanText
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+
+        let finalHtml = `<div class="thinking">🧠 Мысли ИИ:<br>Логический анализ выполнен успешно.</div><div>${safeText}</div>`;
 
         typeText(finalHtml);
 
