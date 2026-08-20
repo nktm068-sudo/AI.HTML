@@ -9,13 +9,10 @@ const outputDiv = document.getElementById('output');
 const sendBtn = document.getElementById('sendBtn');
 const userInput = document.getElementById('userInput');
 
-// Функция плавного эффекта печатной машинки
 function typeText(targetHtml, callback) {
     outputDiv.innerHTML = "";
-    
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = targetHtml;
-    
     const nodes = Array.from(tempDiv.childNodes);
     let nodeIndex = 0;
     
@@ -24,9 +21,7 @@ function typeText(targetHtml, callback) {
             if (callback) callback();
             return;
         }
-        
         const currentNode = nodes[nodeIndex];
-        
         if (currentNode.nodeType === Node.TEXT_NODE) {
             let text = currentNode.textContent;
             let charIndex = 0;
@@ -47,7 +42,6 @@ function typeText(targetHtml, callback) {
         } else {
             const clonedNode = currentNode.cloneNode(false);
             outputDiv.appendChild(clonedNode);
-            
             let childText = currentNode.textContent;
             let charIndex = 0;
             
@@ -78,9 +72,7 @@ window.generate = async function() {
     const prompt = userInput.value.trim();
     if (!prompt || sendBtn.disabled) return;
 
-    // Автоматически очищаем поле ввода
     userInput.value = "";
-
     outputDiv.innerText = "Подключение к стабильному хабу и загрузка файлов (около 20 сек)...";
     sendBtn.disabled = true;
 
@@ -97,7 +89,7 @@ window.generate = async function() {
 
         outputDiv.innerText = "Ядро ИИ вычисляет логику...";
 
-        const systemPrompt = `<|im_start|>system\nТы — сверхрациональный ИИ. Отвечай строго на русском языке. Сначала пиши свои мысли в теге <think>, а затем давай чёткий ответ.\n<|im_end|>\n<|im_start|>user\n\${prompt}\n<|im_end|>\n<|im_start|>assistant\n<think>\n`;
+        const systemPrompt = `<|im_start|>system\nТы — сверхрациональный ИИ. Отвечай строго на русском языке. Сначала пиши свои мысли в теге <think>, а затем давай чёткий ответ.\n<|im_end|>\n<|im_start|>user\n${prompt}\n<|im_end|>\n<|im_start|>assistant\n<think>\n`;
         
         const response = await generator(systemPrompt, {
             max_new_tokens: 300,
@@ -122,15 +114,14 @@ window.generate = async function() {
             let parts = cleanText.split("</think>");
             let thinkingProcess = parts[0].replace("<think>", "").trim();
             let finalAnswer = parts[1].trim();
-            finalHtml = `<div class="thinking">🧠 Мысли ИИ:<br>\${thinkingProcess}</div><div>\${finalAnswer}</div>`;
+            finalHtml = `<div class="thinking">🧠 Мысли ИИ:<br>${thinkingProcess}</div><div>${finalAnswer}</div>`;
         } else if (cleanText.includes("</think>")) {
             let parts = cleanText.split("</think>");
-            finalHtml = `<div class="thinking">🧠 Мысли ИИ:<br>Анализ завершен успешно.</div><div>\${parts[0].trim()}</div>`;
+            finalHtml = `<div class="thinking">🧠 Мысли ИИ:<br>Анализ завершен успешно.</div><div>${parts[0].trim()}</div>`;
         } else {
-            finalHtml = `<div class="thinking">🧠 Мысли ИИ:<br>Логический анализ выполнен успешно.</div><div>\${cleanText}</div>`;
+            finalHtml = `<div class="thinking">🧠 Мысли ИИ:<br>Логический анализ выполнен успешно.</div><div>${cleanText}</div>`;
         }
 
-        // Запуск плавного эффекта печатной машинки
         typeText(finalHtml);
 
     } catch (e) {
