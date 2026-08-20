@@ -1,0 +1,128 @@
+body {
+    background: #0d1117;
+    color: #c9d1d9;
+    font-family: 'Courier New', monospace;
+    text-align: center;
+    padding-top: 20px;
+    margin: 0;
+    padding-left: 10px;
+    padding-right: 10px;
+    box-sizing: border-box;
+}
+.container {
+    max-width: 750px;
+    margin: 0 auto;
+    background: #161b22;
+    padding: 20px;
+    border-radius: 12px;
+    border: 2px solid #58a6ff;
+    box-shadow: 0 0 15px rgba(88, 166, 255, 0.2);
+    box-sizing: border-box;
+}
+.input-group {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+input {
+    font-size: 16px;
+    padding: 12px;
+    flex: 1;
+    background: #0d1117;
+    color: #58a6ff;
+    border: 2px solid #30363d;
+    border-radius: 6px;
+    outline: none;
+    min-width: 0;
+}
+input:focus {
+    border-color: #58a6ff;
+}
+button {
+    font-size: 14px;
+    padding: 12px 20px;
+    cursor: pointer;
+    background: #238636;
+    color: white;
+    font-weight: bold;
+    border: none;
+    border-radius: 6px;
+    transition: 0.2s;
+    white-space: nowrap;
+}
+button:hover {
+    background: #2ea043;
+    transform: scale(1.02);
+}
+#output {
+    margin-top: 25px;
+    padding: 15px;
+    background: #0d1117;
+    border-radius: 6px;
+    border: 1px solid #30363d;
+    text-align: left;
+    min-height: 120px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: #e6edf3;
+    font-size: 14px;
+    line-height: 1.5;
+}
+h2 {
+    color: #58a6ff;
+    text-transform: uppercase;
+    margin-top: 0;
+    margin-bottom: 5px;
+    font-weight: bold;
+    font-size: 22px;
+}
+.thinking {
+    color: #8b949e;
+    font-style: italic;
+    border-left: 3px solid #8b949e;
+    padding-left: 10px;
+    margin-bottom: 15px;
+}
+.subtitle {
+    color: #8b949e; 
+    margin-bottom: 20px; 
+    font-size: 13px;
+}
+.welcome-msg {
+    color: #58a6ff; 
+    font-size: 18px; 
+    font-weight: bold; 
+    margin-bottom: 15px;
+}
+
+/* Адаптивная мобильная верстка */
+@media (max-width: 480px) {
+    body {
+        padding-top: 10px;
+    }
+    .container {
+        padding: 15px;
+    }
+    .input-group {
+        flex-direction: column;
+        gap: 12px;
+    }
+    input {
+        width: 100%;
+        box-sizing: border-box;
+    }
+    button {
+        width: 100%;
+        padding: 14px;
+        font-size: 16px;
+    }
+    h2 {
+        font-size: 20px;
+    }
+    .welcome-msg {
+        font-size: 16px;
+    }
+}
