@@ -3,17 +3,17 @@ body {
     color: #c9d1d9;
     font-family: 'Courier New', monospace;
     text-align: center;
-    padding-top: 20px;
+    padding-top: 50px;
     margin: 0;
-    padding-left: 10px;
-    padding-right: 10px;
+    padding-left: 20px;
+    padding-right: 20px;
     box-sizing: border-box;
 }
 .container {
     max-width: 750px;
     margin: 0 auto;
     background: #161b22;
-    padding: 20px;
+    padding: 25px;
     border-radius: 12px;
     border: 2px solid #58a6ff;
     box-shadow: 0 0 15px rgba(88, 166, 255, 0.2);
@@ -66,10 +66,8 @@ button:hover {
     text-align: left;
     min-height: 120px;
     white-space: pre-wrap;
-    word-break: break-word;
+    word-break: break-all;
     color: #e6edf3;
-    font-size: 14px;
-    line-height: 1.5;
 }
 h2 {
     color: #58a6ff;
@@ -77,7 +75,6 @@ h2 {
     margin-top: 0;
     margin-bottom: 5px;
     font-weight: bold;
-    font-size: 22px;
 }
 .thinking {
     color: #8b949e;
@@ -93,15 +90,17 @@ h2 {
 }
 .welcome-msg {
     color: #58a6ff; 
-    font-size: 18px; 
+    font-size: 20px; 
     font-weight: bold; 
     margin-bottom: 15px;
 }
 
-/* Адаптивная мобильная верстка */
-@media (max-width: 480px) {
+/* Мобильная адаптация БЕЗ влияния на десктопную версию */
+@media (max-width: 768px) {
     body {
-        padding-top: 10px;
+        padding-top: 20px;
+        padding-left: 10px;
+        padding-right: 10px;
     }
     .container {
         padding: 15px;
@@ -112,17 +111,10 @@ h2 {
     }
     input {
         width: 100%;
-        box-sizing: border-box;
     }
     button {
         width: 100%;
         padding: 14px;
-        font-size: 16px;
-    }
-    h2 {
-        font-size: 20px;
-    }
-    .welcome-msg {
         font-size: 16px;
     }
 }
