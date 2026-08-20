@@ -117,7 +117,8 @@ window.generate = async function() {
             finalHtml = `<div class="thinking">🧠 Мысли ИИ:<br>${thinkingProcess}</div><div>${finalAnswer}</div>`;
         } else if (cleanText.includes("</think>")) {
             let parts = cleanText.split("</think>");
-            finalHtml = `<div class="thinking">🧠 Мысли ИИ:<br>Анализ завершен успешно.</div><div>${parts[0].trim()}</div>`;
+            let finalAnswer = parts[0].trim();
+            finalHtml = `<div class="thinking">🧠 Мысли ИИ:<br>Анализ завершен успешно.</div><div>${finalAnswer}</div>`;
         } else {
             finalHtml = `<div class="thinking">🧠 Мысли ИИ:<br>Логический анализ выполнен успешно.</div><div>${cleanText}</div>`;
         }
