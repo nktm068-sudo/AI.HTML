@@ -1,14 +1,67 @@
-const brokenLib = "ht tps:// cdn. jsd elivr. net/ npm/ @xen ova/ trans form ers@2. 17. 2";
-const brokenModel = "Xe no va/ Qw en1. 5-0. 5B- Ch at";
+// 1. ИМПОРТЫ ОФИЦИАЛЬНЫХ БИБЛИОТЕК (Никита, сотри пробелы в адресах ниже!)
+import { initializeApp } from "ht tps:// www. gsta tic. com/ fire base js/ 10. 8. 0/ fire base- app. js";
+import { 
+    getAuth, 
+    signInWithPopup, 
+    GoogleAuthProvider, 
+    GithubAuthProvider, 
+    signOut, 
+    onAuthStateChanged 
+} from "ht tps:// www. gsta tic. com/ fire base js/ 10. 8. 0/ fire base- auth. js";
+import { Client } from "ht tps:// cdn. jsd elivr. net/ npm/ @gra dio/ cl ie nt/ dist/ in dex. js";
 
-const libUrl = brokenLib.replace(/\s+/g, '');
-const modelId = brokenModel.replace(/\s+/g, '');
+// 2. ТВОЙ КОНФИГ ИЗ КОНСОЛИ FIREBASE (Никита, сотри пробелы внутри кавычек ниже!)
+const firebaseConfig = {
+    apiKey: "AIzaSyCznFuCKXm9_gO37587tTMoZAHmSq74EqQ",
+    authDomain: "ng pt -a i. fi re ba se ap p. co m",
+    projectId: "ngpt-ai",
+    storageBucket: "ng pt -a i. ap ps po t. co m",
+    messagingSenderId: "397399730958",
+    appId: "1:397399730958:web:42b672dd37dc4fda3d855f"
+};
 
-let generator = null;
+// Защитный авто-фикс пробелов для полей конфига, чтобы ничего не упало
+firebaseConfig.authDomain = firebaseConfig.authDomain.replace(/\s+/g, '');
+firebaseConfig.storageBucket = firebaseConfig.storageBucket.replace(/\s+/g, '');
+
+// Инициализация Firebase модулей
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const googleProvider = new GoogleAuthProvider();
+const githubProvider = new GithubAuthProvider();
+
+// Локальное хранилище истории диалога
+if (!window.chatHistory) {
+    window.chatHistory = [];
+}
+
+// Поиск интерфейсных элементов на странице
+const authScreen = document.getElementById('authScreen');
+const chatContainer = document.getElementById('chatContainer');
+const userGreeting = document.getElementById('userGreeting');
 const outputDiv = document.getElementById('output');
 const sendBtn = document.getElementById('sendBtn');
 const userInput = document.getElementById('userInput');
 
+// Контроль авторизации (скрываем чат, пока пользователь не вошёл)
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        authScreen.style.display = 'none';
+        chatContainer.style.display = 'block';
+        userGreeting.innerText = `Рад видеть вас сегодня, ${user.displayName || 'Оператор'}.`;
+    } else {
+        authScreen.style.display = 'flex';
+        chatContainer.style.display = 'none';
+        window.chatHistory = []; // Очищаем историю при выходе
+    }
+});
+
+// Логика вызова окон авторизации при клике по кнопкам
+document.getElementById('googleLoginBtn').addEventListener('click', () => signInWithPopup(auth, googleProvider).catch(err => alert(err.message)));
+document.getElementById('githubLoginBtn').addEventListener('click', () => signInWithPopup(auth, githubProvider).catch(err => alert(err.message)));
+document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
+
+// Эффект посимвольной хакерской печати HTML-текста
 function typeText(targetHtml, callback) {
     outputDiv.innerHTML = "";
     const tempDiv = document.createElement('div');
@@ -61,81 +114,53 @@ function typeText(targetHtml, callback) {
     renderNextNode();
 }
 
+// Отправка сообщений по нажатию Enter в текстовом поле
 userInput.addEventListener('keydown', function(event) {
     if (event.key === 'Enter') {
         event.preventDefault();
-        window.generate();
+        generate();
     }
 });
 
-window.generate = async function() {
+// Отправка запроса на твой питоновский Gradio Space
+async function generate() {
     const prompt = userInput.value.trim();
     if (!prompt || sendBtn.disabled) return;
 
     userInput.value = "";
-    outputDiv.innerText = "Подключение к стабильному хабу и загрузка файлов (около 20 сек)...";
+    outputDiv.innerText = "Удаленный Gradio-сервер вычисляет логику...";
     sendBtn.disabled = true;
 
     try {
-        const { pipeline, env } = await import(libUrl);
+        // Твоя ссылка на Gradio Space (Никита, сотри пробелы внутри кавычек ниже!)
+        const spaceUrl = "ht tp s:// em er al dcr ea to r- ai- gp t. hf. sp ac e";
+        const cleanUrl = spaceUrl.replace(/\s+/g, '');
         
-        env.allowLocalModels = false;
-        env.remoteHost = "https://huggingface.co";
-        env.remotePathTemplate = "{model}/resolve/main/";
-
-        if (!generator) {
-            generator = await pipeline('text-generation', modelId);
-        }
-
-        outputDiv.innerText = "Ядро ИИ вычисляет логику...";
-
-        // Анализ сообщения пользователя на мат и капс для изменения характера
-        const upperPrompt = prompt.toUpperCase();
-        const hasBadWords = /(блять|сука|нахуй|заебал|бля|нах|похуй|хуй|говно|пидор|еб)/i.test(prompt);
-        const isCapsAttack = prompt.length > 4 && prompt === upperPrompt;
-
-        let aiCharacter = "Ты — вежливый и полезный ИИ-ассистент. Отвечай строго на русском языке.";
-
-        if (hasBadWords || isCapsAttack) {
-            aiCharacter = "Ты — дерзкий, резкий и саркастичный ИИ. Твой собеседник грубит тебе или кричит, поэтому ты имеешь полное право отвечать ему колко, грубо, с сарказмом и на «ты», но оставайся в рамках правил и пиши на русском языке.";
-        }
-
-        const systemPrompt = `<|im_start|>system\n${aiCharacter}\n<|im_end|>\n<|im_start|>user\n${prompt}\n<|im_end|>\n<|im_start|>assistant\n`;
+        // Подключаемся напрямую к твоему Python-серверу
+        const client = await Client.connect(cleanUrl);
         
-        // Оптимальные параметры, чтобы нейросеть не плевалась пробелами
-        const response = await generator(systemPrompt, {
-            max_new_tokens: 150,
-            temperature: 0.7,
-            repetition_penalty: 1.2,
-            do_sample: true
+        // Вызываем функцию chat_api, передаем текст и текущую историю
+        const result = await client.predict("/chat_api", { 
+            prompt: prompt, 
+            history: window.chatHistory 
         });
 
-        let rawText = response?.generated_text || "";
-        let cleanText = rawText;
+        const aiResponse = result.data;
 
-        if (cleanText.includes("assistant\n")) {
-            cleanText = cleanText.split("assistant\n").pop();
-        }
+        // Сохраняем реплики в историю переписки
+        window.chatHistory.push({ role: 'user', content: prompt });
+        window.chatHistory.push({ role: 'assistant', content: aiResponse });
 
-        cleanText = cleanText
-            .replace(/<\|im_end\|>/g, "")
-            .replace(/<\|im_start\|>/g, "")
-            .trim();
-
-        // Защита от HTML-тегов в ответе нейросети, чтобы не ломалась верстка
-        let safeText = cleanText
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;");
-
-        let finalHtml = `<div class="thinking">🧠 Мысли ИИ:<br>Логический анализ выполнен успешно.</div><div>${safeText}</div>`;
-
+        let finalHtml = `<div class="thinking">🧠 Мысли ИИ:<br>Анализ выполнен через Градио на сервере.</div><div>${aiResponse}</div>`;
         typeText(finalHtml);
 
     } catch (e) {
-        outputDiv.innerText = "Ошибка запуска ИИ: " + e.message;
+        outputDiv.innerText = "Ошибка Градио: " + e.message;
         console.error(e);
     } finally {
         sendBtn.disabled = false;
     }
-};
+}
+
+// Привязываем запуск логики к клику по кнопке
+sendBtn.addEventListener('click', generate);
