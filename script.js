@@ -1,5 +1,5 @@
 // 1. ИМПОРТЫ ОФИЦИАЛЬНЫХ БИБЛИОТЕК (Никита, сотри пробелы в адресах ниже!)
-import { initializeApp } from "ht tps:// www. gsta tic. com/ fire base js/ 10. 8. 0/ fire base- app. js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { 
     getAuth, 
     signInWithPopup, 
@@ -7,15 +7,15 @@ import {
     GithubAuthProvider, 
     signOut, 
     onAuthStateChanged 
-} from "ht tps:// www. gsta tic. com/ fire base js/ 10. 8. 0/ fire base- auth. js";
-import { Client } from "ht tps:// cdn. jsd elivr. net/ npm/ @gra dio/ cl ie nt/ dist/ in dex. js";
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { Client } from "https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.js";
 
 // 2. ТВОЙ КОНФИГ ИЗ КОНСОЛИ FIREBASE (Никита, сотри пробелы внутри кавычек ниже!)
 const firebaseConfig = {
     apiKey: "AIzaSyCznFuCKXm9_gO37587tTMoZAHmSq74EqQ",
-    authDomain: "ng pt -a i. fi re ba se ap p. co m",
+    authDomain: "ngpt-ai.firebaseapp.com",
     projectId: "ngpt-ai",
-    storageBucket: "ng pt -a i. ap ps po t. co m",
+    storageBucket: "ngpt-ai.appspot.com",
     messagingSenderId: "397399730958",
     appId: "1:397399730958:web:42b672dd37dc4fda3d855f"
 };
