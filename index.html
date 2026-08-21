@@ -8,18 +8,189 @@
 </head>
 <body>
 
-<div class="container">
+<!-- ЭКРАН ВХОДА -->
+<div id="authScreen" class="auth-screen">
+    <div class="auth-box">
+        <h3>Вход в систему NGPT</h3>
+        <div class="subtitle">Для доступа к ядру ИИ пройдите авторизацию</div>
+        <button class="btn-auth btn-google" id="googleLoginBtn">Войти через Google</button>
+        <button class="btn-auth btn-github" id="githubLoginBtn">Войти через GitHub</button>
+    </div>
+</div>
+
+<!-- ИНТЕРФЕЙС ЧАТА -->
+<div id="chatContainer" class="container" style="display: none;">
+    <button class="logout-btn" id="logoutBtn">Выйти из системы</button>
+    <div class="clear"></div>
+    
     <h2>Нейросеть ГПТ</h2>
     <div class="subtitle">Advanced Reasoner Core v515 (NGPT Omni 121B - IQ 115)</div>
-    <div class="welcome-msg">Рад видеть вас сегодня.</div>
+    <div class="welcome-msg" id="userGreeting">Рад видеть вас сегодня.</div>
+    
     <div class="input-group">
         <input type="text" id="userInput" value="Привет!">
-        <button id="sendBtn" onclick="generate()">Запуск</button>
+        <button id="sendBtn">Запуск</button>
     </div>
     <div id="output">Terminal ready. Waiting for initialization...</div>
 </div>
 
-<script type="module" src="script.js"></script>
+<script type="module">
+    // Импорты библиотек (Никита, сотри пробелы в адресах ниже!)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app. js";
+    import { 
+        getAuth, 
+        signInWithPopup, 
+        GoogleAuthProvider, 
+        GithubAuthProvider, 
+        signOut, 
+        onAuthStateChanged 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase/auth.js";
+    import { Client } from "https://dn.jsdelivr.net/npm/@gradio/client/dist/index.js";
+
+    // Твой личный конфиг из консоли — Гитхаб его НЕ заблокирует, оставляем как есть!
+   const firebaseConfig = {
+  apiKey: "AIzaSyCznFuCXKm9_gO37S07tTMoZAhmSq74EqQ",
+  authDomain: "ngpt-ai.firebaseapp.com",
+  projectId: "ngpt-ai",
+  storageBucket: "ngpt-ai.firebasestorage.app",
+  messagingSenderId: "397399730958",
+  appId: "1:397399730958:web:42b672dd37dc4fda3d855f"
+};
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const googleProvider = new GoogleAuthProvider();
+    const githubProvider = new GithubAuthProvider();
+
+    const authScreen = document.getElementById('authScreen');
+    const chatContainer = document.getElementById('chatContainer');
+    const userGreeting = document.getElementById('userGreeting');
+    const outputDiv = document.getElementById('output');
+    const sendBtn = document.getElementById('sendBtn');
+    const userInput = document.getElementById('userInput');
+
+    if (!window.chatHistory) {
+        window.chatHistory = [];
+    }
+
+    // Следим за авторизацией
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            authScreen.style.display = 'none';
+            chatContainer.style.display = 'block';
+            userGreeting.innerText = `Рад видеть вас сегодня, ${user.displayName || 'Оператор'}.`;
+        } else {
+            authScreen.style.display = 'flex';
+            chatContainer.style.display = 'none';
+            window.chatHistory = [];
+        }
+    });
+
+    document.getElementById('googleLoginBtn').addEventListener('click', () => signInWithPopup(auth, googleProvider).catch(err => alert(err.message)));
+    document.getElementById('githubLoginBtn').addEventListener('click', () => signInWithPopup(auth, githubProvider).catch(err => alert(err.message)));
+    document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
+
+    // Функция эффекта печатающегося текста
+    function typeText(targetHtml, callback) {
+        outputDiv.innerHTML = "";
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = targetHtml;
+        const nodes = Array.from(tempDiv.childNodes);
+        let nodeIndex = 0;
+        
+        function renderNextNode() {
+            if (nodeIndex >= nodes.length) {
+                if (callback) callback();
+                return;
+            }
+            const currentNode = nodes[nodeIndex];
+            if (currentNode.nodeType === Node.TEXT_NODE) {
+                let text = currentNode.textContent;
+                let charIndex = 0;
+                const textNode = document.createTextNode("");
+                outputDiv.appendChild(textNode);
+                
+                function typeChar() {
+                    if (charIndex < text.length) {
+                        textNode.textContent += text.charAt(charIndex);
+                        charIndex++;
+                        setTimeout(typeChar, 15);
+                    } else {
+                        nodeIndex++;
+                        renderNextNode();
+                    }
+                }
+                typeChar();
+            } else {
+                const clonedNode = currentNode.cloneNode(false);
+                outputDiv.appendChild(clonedNode);
+                let childText = currentNode.textContent;
+                let charIndex = 0;
+                
+                function typeChildChar() {
+                    if (charIndex < childText.length) {
+                        clonedNode.textContent += childText.charAt(charIndex);
+                        charIndex++;
+                        setTimeout(typeChildChar, 15);
+                    } else {
+                        nodeIndex++;
+                        renderNextNode();
+                    }
+                }
+                typeChildChar();
+            }
+        }
+        renderNextNode();
+    }
+
+    userInput.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            generate();
+        }
+    });
+
+    // Генерация ответа через Gradio API
+    async function generate() {
+        const prompt = userInput.value.trim();
+        if (!prompt || sendBtn.disabled) return;
+
+        userInput.value = "";
+        outputDiv.innerText = "Удаленный Gradio-сервер вычисляет логику...";
+        sendBtn.disabled = true;
+
+        try {
+            // Твоя ссылка на Gradio Space (Никита, сотри пробелы внутри кавычек ниже!)
+            const spaceUrl = "ht tp s:// em er al dcr ea to r- ai- gp t. hf. sp ac e";
+            const cleanUrl = spaceUrl.replace(/\s+/g, '');
+            
+            // Подключаемся к питоновскому бэкенду на Хаггинге
+            const client = await Client.connect(cleanUrl);
+            
+            // Вызываем функцию chat_api из Python
+            const result = await client.predict("/chat_api", { 
+                prompt: prompt, 
+                history: window.chatHistory 
+            });
+
+            const aiResponse = result.data;
+
+            window.chatHistory.push({ role: 'user', content: prompt });
+            window.chatHistory.push({ role: 'assistant', content: aiResponse });
+
+            let finalHtml = `<div class="thinking">🧠 Мысли ИИ:<br>Анализ выполнен через Градио на сервере.</div><div>${aiResponse}</div>`;
+            typeText(finalHtml);
+
+        } catch (e) {
+            outputDiv.innerText = "Ошибка Градио: " + e.message;
+            console.error(e);
+        } finally {
+            sendBtn.disabled = false;
+        }
+    }
+
+    sendBtn.addEventListener('click', generate);
+</script>
 
 </body>
 </html>
