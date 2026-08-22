@@ -37,22 +37,27 @@ const userGreeting = document.getElementById('userGreeting');
 const outputDiv = document.getElementById('output');
 const sendBtn = document.getElementById('sendBtn');
 const userInput = document.getElementById('userInput');
-
-// Новые элементы для боковой панели чатов (Добавь эти id в свой HTML!)
 const chatsSidebar = document.getElementById('chatsSidebar'); 
 
-// Структура для управления вкладками чатов на фронтенде
+// Инициализация структуры чатов
 let sessions = {}; 
 let currentSessionId = null;
 
-// Контроль авторизации (скрываем чат, пока пользователь не вошёл)
+// ПРИНУДИТЕЛЬНЫЙ СТАРТОВЫЙ ДИЗАЙН: пока статус не подтвержден, чат строго скрыт!
+authScreen.style.display = 'flex';
+chatContainer.style.display = 'none';
+
+// Контроль авторизации (Жесткая проверка: нет юзера — сиди на экране входа!)
 onAuthStateChanged(auth, (user) => {
-    if (user) {
+    if (user && user.uid) {
         authScreen.style.display = 'none';
         chatContainer.style.display = 'block';
         userGreeting.innerText = `Рад видеть вас сегодня, ${user.displayName || 'Оператор'}.`;
-        // Создаем первый пустой чат при входе
-        createNewChat();
+        
+        // Если чатов еще нет — создаем первый
+        if (Object.keys(sessions).length === 0) {
+            createNewChat();
+        }
     } else {
         authScreen.style.display = 'flex';
         chatContainer.style.display = 'none';
@@ -79,10 +84,10 @@ function createNewChat() {
     outputDiv.innerHTML = sessions[sessionId].htmlContent;
 }
 
-// Функция обновления боковой панели со списком чатов
+// Функция обновления боковой панели чатов
 function renderSidebar() {
     if (!chatsSidebar) return;
-    chatsSidebar.innerHTML = `<button id="newChatBtn" style="width:100%; margin-bottom:10px; background:#21262d;">+ Новый чат</button>`;
+    chatsSidebar.innerHTML = `<button id="newChatBtn" style="width:100%; margin-bottom:10px; background:#238636;">+ Новый чат</button>`;
     
     document.getElementById('newChatBtn').addEventListener('click', createNewChat);
 
@@ -95,7 +100,6 @@ function renderSidebar() {
         chatBtn.innerText = sessions[id].title;
         
         chatBtn.addEventListener('click', () => {
-            // Сохраняем текущий экран перед переключением
             if (currentSessionId) sessions[currentSessionId].htmlContent = outputDiv.innerHTML;
             currentSessionId = id;
             outputDiv.innerHTML = sessions[id].htmlContent;
@@ -106,12 +110,12 @@ function renderSidebar() {
     });
 }
 
-// Функция автоматической прокрутки (скролла) вниз
+// Автоматическая прокрутка (скролл) строго вниз
 function scrollToBottom() {
     outputDiv.scrollTop = outputDiv.scrollHeight;
 }
 
-// Эффект посимвольной хакерской печати HTML-текста с авто-скроллом
+// Эффект печати с авто-скроллом
 function typeText(targetHtml, callback) {
     outputDiv.innerHTML = "";
     const tempDiv = document.createElement('div');
@@ -122,7 +126,7 @@ function typeText(targetHtml, callback) {
     function renderNextNode() {
         if (nodeIndex >= nodes.length) {
             if (callback) callback();
-            scrollToBottom(); // Скроллим вниз в самом конце
+            scrollToBottom();
             return;
         }
         const currentNode = nodes[nodeIndex];
@@ -136,7 +140,7 @@ function typeText(targetHtml, callback) {
                 if (charIndex < text.length) {
                     textNode.textContent += text.charAt(charIndex);
                     charIndex++;
-                    scrollToBottom(); // Скроллим во время печати текста
+                    scrollToBottom();
                     setTimeout(typeChar, 15);
                 } else {
                     nodeIndex++;
@@ -154,7 +158,7 @@ function typeText(targetHtml, callback) {
                 if (charIndex < childText.length) {
                     clonedNode.textContent += childText.charAt(charIndex);
                     charIndex++;
-                    scrollToBottom(); // Скроллим во время печати HTML-тегов
+                    scrollToBottom();
                     setTimeout(typeChildChar, 15);
                 } else {
                     nodeIndex++;
@@ -167,7 +171,6 @@ function typeText(targetHtml, callback) {
     renderNextNode();
 }
 
-// Отправка сообщений по нажатию Enter в текстовом поле
 userInput.addEventListener('keydown', function(event) {
     if (event.key === 'Enter') {
         event.preventDefault();
@@ -175,16 +178,14 @@ userInput.addEventListener('keydown', function(event) {
     }
 });
 
-// Отправка запроса на твой питоновский Gradio Space
+// Отправка запроса на Gradio Space
 async function generate() {
     const prompt = userInput.value.trim();
     if (!prompt || sendBtn.disabled || !currentSessionId) return;
 
-    // АВТО-НАЗВАНИЕ ЧАТА С 1 ЗАПРОСА:
-    // Если это первое сообщение в текущей вкладке, переименовываем чат по тексту промпта
+    // АВТО-НАЗВАНИЕ ЧАТА ПО СЛОВАМ 1 ЗАПРОСА
     if (sessions[currentSessionId].isFirstMessage) {
-        // Обрезаем название до 20 символов, чтобы красиво смотрелось в сайдбаре
-        sessions[currentSessionId].title = prompt.length > 20 ? prompt.substring(0, 20) + '...' : prompt;
+        sessions[currentSessionId].title = prompt.length > 18 ? prompt.substring(0, 18) + '...' : prompt;
         sessions[currentSessionId].isFirstMessage = false;
         renderSidebar();
     }
@@ -194,14 +195,13 @@ async function generate() {
     sendBtn.disabled = true;
 
     try {
-        // Твоя ссылка на Gradio Space с пробелами (Никита, сотри пробелы внутри кавычек ниже!)
+        // Твоя ссылка на Gradio Space (Никита, Пик ЛИЧНО оставил тут пробелы!)
         const spaceUrl = "ht tp s:// em er al dcr ea to r- ai- gp t. hf. sp ac e";
         const cleanUrl = spaceUrl.replace(/\s+/g, '');
         
-        // Подключаемся напрямую к твоему Python-серверу
+        // Подключаемся через импортированный клиент
         const client = await Client.connect(cleanUrl);
         
-        // Отправляем промпт на сервер Hugging Face (вместе с id чата, чтобы сервер разделял сессии!)
         const result = await client.predict("/chat_api", { 
             prompt: prompt,
             session_id: currentSessionId
@@ -211,7 +211,6 @@ async function generate() {
 
         let finalHtml = `<div class="thinking">🧠 Мысли ИИ:<br>Анализ выполнен через Градио на сервере.</div><div>${aiResponse}</div>`;
         typeText(finalHtml, () => {
-            // Сохраняем итоговый HTML во вкладку сессии
             sessions[currentSessionId].htmlContent = outputDiv.innerHTML;
         });
 
@@ -223,5 +222,4 @@ async function generate() {
     }
 }
 
-// Привязываем запуск логики к клику по кнопке
 sendBtn.addEventListener('click', generate);
