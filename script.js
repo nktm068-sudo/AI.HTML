@@ -30,11 +30,6 @@ const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 const githubProvider = new GithubAuthProvider();
 
-// Локальное хранилище истории диалога
-if (!window.chatHistory) {
-    window.chatHistory = [];
-}
-
 // Поиск интерфейсных элементов на странице
 const authScreen = document.getElementById('authScreen');
 const chatContainer = document.getElementById('chatContainer');
@@ -52,7 +47,6 @@ onAuthStateChanged(auth, (user) => {
     } else {
         authScreen.style.display = 'flex';
         chatContainer.style.display = 'none';
-        window.chatHistory = []; // Очищаем историю при выходе
     }
 });
 
@@ -132,24 +126,19 @@ async function generate() {
     sendBtn.disabled = true;
 
     try {
-        // Твоя ссылка на Gradio Space (Никита, сотри пробелы внутри кавычек ниже!)
+        // Твоя ссылка на Gradio Space с пробелами (Никита, сотри пробелы внутри кавычек ниже!)
         const spaceUrl = "ht tp s:// em er al dcr ea to r- ai- gp t. hf. sp ac e";
         const cleanUrl = spaceUrl.replace(/\s+/g, '');
         
         // Подключаемся напрямую к твоему Python-серверу
         const client = await Client.connect(cleanUrl);
         
-        // Вызываем функцию chat_api, передаем текст и текущую историю
+        // Отправляем ТОЛЬКО промпт. Вся история теперь будет крутиться на стороне Python!
         const result = await client.predict("/chat_api", { 
-            prompt: prompt, 
-            history: window.chatHistory 
+            prompt: prompt
         });
 
         const aiResponse = result.data;
-
-        // Сохраняем реплики в историю переписки
-        window.chatHistory.push({ role: 'user', content: prompt });
-        window.chatHistory.push({ role: 'assistant', content: aiResponse });
 
         let finalHtml = `<div class="thinking">🧠 Мысли ИИ:<br>Анализ выполнен через Градио на сервере.</div><div>${aiResponse}</div>`;
         typeText(finalHtml);
